@@ -10,13 +10,14 @@ An adaptive mock examination platform for high-stakes exam prep for Ateneo Unive
 ---
 
 ## Tech Stack (Local Development & Testing)
-
+**not yet final
 
 ---
 
 ## Prerequisites
+**not yet final
 
-
+---
 
 ## Pulling Changes
 ```bash
