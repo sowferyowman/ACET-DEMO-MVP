@@ -43,7 +43,7 @@ git add .
 git commit -m "[see format below]: describe what you did"
 # example git commit -m "[feat]: created login page"
 git push origin [your-branch]
-# example git push origin garcia-branch
+# example git push origin mejia-branch
 ```
 ---
 
