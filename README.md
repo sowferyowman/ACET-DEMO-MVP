@@ -24,3 +24,36 @@ An adaptive mock examination platform for high-stakes exam prep for Ateneo Unive
 * **Node.js** v18.0.0 o +
 * **npm** or **yarn** package manager
 * **Git** installed locally
+
+Pulling Changes
+git branch 
+# checks what branch you are in
+# you must be in [your-branch] before doing the next steps
+git fetch origin
+git merge origin/development-branch
+Note: Always pull from the repository before pushing your changes.
+
+Adding/Pushing your Changes Workflow
+git checkout -b [your-branch]
+# make your changes
+git add .
+git commit -m "[see format below]: describe what you did"
+# example git commit -m "[feat]: created login page"
+git push origin [your-branch]
+# example git push origin garcia-branch
+Commit Message Format
+feat:     new feature added
+fix:      bug fix
+chore:    config, deps, tooling (no logic change)
+refactor: code restructure, no behavior change
+docs:     documentation only
+style:    formatting only
+test:     adding or fixing tests
+Creating a Pull Request
+This is to be done every time you push changes to the repo.
+
+Go to the repo on GitHub — you'll see a Compare & pull request banner
+Click it, or go to Pull requests → New pull request
+base: development-branch ← compare: your-branch
+Write a short description of what you did, which pages/files you changed and what changed in them
+Click Create pull request
