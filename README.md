@@ -63,3 +63,18 @@ This is to be done **every time you push changes** to the repo.
 3. base: **development-branch** ← compare: **your-branch**
 4. Write a *short description of what you did*, which pages/files you changed and what changed in them
 5. Click **Create pull request**
+
+Install Root/Backend dependencies:
+
+Bash
+npm install
+Navigate into the client folder and install Frontend dependencies:
+
+Bash
+cd client
+npm install
+Step 3: Start the Application
+While still inside the client folder terminal, run the Vite development server:
+
+Bash
+npm run dev
