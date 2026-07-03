@@ -1,0 +1,21 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-slate-100 bg-white shadow-soft;
+  }
+
+  .icon-button {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50;
+  }
+}
