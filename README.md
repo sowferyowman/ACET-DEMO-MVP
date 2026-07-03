@@ -1,5 +1,18 @@
 # ACET-DEMO-MVP
-An adaptive mock examination platform for high-stakes exam prep for Ateneo University
+An adaptive mock examination platform for high-stakes exam prep for Ateneo University (React/Vite frontend and Express/SQLite backend)
+
+## Structure
+
+- `client/` - React app with Router, Tailwind, Chart.js, Axios, React Icons, Framer Motion, and React Hook Form.
+- `server/` - Express API with SQLite persistence and seeded ACET demo data.
+
+## Scripts
+
+```bash
+npm run install:all
+npm run dev
+```
+The client runs on `http://localhost:5173` and proxies API requests to `http://localhost:4000`.
 
 ### Out-of-Scope 
 * Live Server Hosting Infrastructure Setup 
@@ -8,14 +21,6 @@ An adaptive mock examination platform for high-stakes exam prep for Ateneo Unive
 * DevOps/SysAdmin Live Operations and Maintenance
 
 ---
-
-## Tech Stack (Local Development & Testing)
-**not yet final
-**---
-
-## Prerequisites
-**not yet final
-**---
 
 ## Pulling Changes
 ```bash
