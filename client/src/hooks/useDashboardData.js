@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getDashboard } from "../api/dashboardApi";
+import { getCurrentUser, getStudentDashboard } from "../services/storage";
 
 export function useDashboardData() {
   const [data, setData] = useState(null);
@@ -13,14 +13,15 @@ export function useDashboardData() {
       try {
         setLoading(true);
         setError(null);
-        const dashboard = await getDashboard();
+        const user = getCurrentUser();
+        const dashboard = getStudentDashboard(user?.email);
         if (mounted) {
           setData(dashboard);
         }
       } catch (err) {
-        console.error("Dashboard API error:", err);
+        console.error("Dashboard storage error:", err);
         if (mounted) {
-          setError("Dashboard data could not be loaded from the database.");
+          setError("Dashboard data could not be loaded from localStorage.");
           setData(null);
         }
       } finally {

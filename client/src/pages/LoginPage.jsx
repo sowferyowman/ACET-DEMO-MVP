@@ -6,12 +6,12 @@ import { useAuth } from "../hooks/useAuth";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
 
   function handleSubmit(event) {
     event.preventDefault();
-    const user = login(form.email.trim(), form.password);
+    const user = login(form.username.trim(), form.password);
 
     if (!user) {
       setError("Invalid email or password.");
@@ -40,13 +40,12 @@ export default function LoginPage() {
 
         <div className="mt-8 space-y-4">
           <label className="block">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-500">Email</span>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-500">Username</span>
             <input
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+              value={form.username}
+              onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
               className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              placeholder="student@exams.ph"
+              placeholder="student1"
               required
             />
           </label>
@@ -58,7 +57,7 @@ export default function LoginPage() {
               value={form.password}
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
               className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              placeholder="studentpassword"
+              placeholder="123"
               required
             />
           </label>
@@ -71,8 +70,8 @@ export default function LoginPage() {
         </button>
 
         <div className="mt-5 rounded-lg bg-slate-50 p-4 text-xs font-semibold text-slate-500">
-          <p>Admin: admin@exams.ph / adminpassword</p>
-          <p className="mt-1">Student: student@exams.ph / studentpassword</p>
+          <p>Admin: admin1 / pass1234</p>
+          <p className="mt-1">Student: student1 / 123</p>
         </div>
       </form>
     </main>

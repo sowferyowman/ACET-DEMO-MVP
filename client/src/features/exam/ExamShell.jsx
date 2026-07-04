@@ -11,6 +11,7 @@ function formatTime(total) {
 export default function ExamShell(props) {
   const {
     phase,
+    examTitle,
     setPhase,
     sections,
     activeSection,
@@ -47,7 +48,7 @@ export default function ExamShell(props) {
     return (
       <div className="grid min-h-screen place-items-center bg-slate-100 p-6">
         <div className="glass-card max-w-2xl p-8 text-center">
-          <h1 className="text-4xl font-black text-slate-950">ACET Full Mock</h1>
+          <h1 className="text-4xl font-black text-slate-950">{examTitle || "Mock Exam"}</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
             Complete section-based questions, timed subject blocks, a written essay, and dynamic results with AI drill recommendations.
           </p>
@@ -118,7 +119,8 @@ export default function ExamShell(props) {
           </p>
           <div className="mt-4 grid grid-cols-5 gap-2">
             {currentSection.questions.map((question, index) => {
-              const answered = responses[activeSection][index] !== null && responses[activeSection][index] !== "";
+              const value = responses[activeSection][index];
+              const answered = Array.isArray(value) ? value.length > 0 : value !== null && value !== "";
               return (
                 <button
                   key={`${question.stem}-${index}`}

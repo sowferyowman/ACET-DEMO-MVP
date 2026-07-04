@@ -2,7 +2,6 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import DashboardOverview from "../features/dashboard/DashboardOverview";
 import ExamHistory from "../features/exams/ExamHistory";
 import StudyPlan from "../features/studyPlan/StudyPlan";
-import CommunityRewards from "../features/community/CommunityRewards";
 
 export default function DashboardPage() {
   const { data, loading, error } = useDashboardData();
@@ -48,7 +47,7 @@ export default function DashboardPage() {
       <DashboardOverview data={data} />
       <ExamHistory exams={data.exams} aiInsight={data.aiInsight} />
       <StudyPlan items={data.studyPlan} />
-      <CommunityRewards rewards={data.rewards} />
     </div>
   );
 }
+

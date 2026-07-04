@@ -6,10 +6,10 @@ export default function LandingPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <p className="text-sm font-black uppercase tracking-widest text-blue-300">Role-based exam platform</p>
+          <p className="text-sm font-black uppercase tracking-widest text-blue-300">Exam platform</p>
           <h1 className="mt-5 max-w-4xl text-5xl font-black leading-tight md:text-7xl">EXAMS.PH</h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
-            Build mock exams as an admin, publish them instantly, and let students take the active exam with results saved in browser storage.
+            Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -23,9 +23,9 @@ export default function LandingPage() {
 
         <div className="grid gap-4">
           {[
-            { icon: FaShieldAlt, title: "Admin Exam Control", text: "Create subjects, MCQs, options, and correct answer keys." },
-            { icon: FaUserGraduate, title: "Student Workspace", text: "Students see only published exams and their own saved results." },
-            { icon: FaChartLine, title: "Local Dashboard Sync", text: "Scores update dashboard metrics from localStorage after submission." }
+            { icon: FaShieldAlt, title: "Exam Control", text: "Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim" },
+            { icon: FaUserGraduate, title: "Student Workspace", text: "Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim" },
+            { icon: FaChartLine, title: "Dashboard Sync", text: "Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim" }
           ].map((item) => {
             const Icon = item.icon;
             return (
