@@ -1,31 +1,24 @@
 import { useMemo, useState } from "react";
-import ReactQuill from "react-quill-new";
-import "react-quill-new/dist/quill.snow.css";
 import { FaBolt, FaSave } from "react-icons/fa";
 import AdminSidebar from "../components/AdminSidebar";
+import PremiumRichTextEditor from "../components/PremiumRichTextEditor";
 import { getDrillBankQuestions, publishDrillQuestion } from "../services/storage";
 
 const subjectOptions = ["Mathematics", "Logical Reasoning", "Science", "English", "Reading Comprehension", "General Knowledge"];
 
 const emptyForm = {
+  questionType: "multiple_choice",
+  type: "multiple_choice",
   stem: "",
   choiceOpts: ["", "", "", ""],
   answerIdx: 0,
+  correctAnswers: [],
+  correctText: "",
+  gradingPlaceholder: "",
   subjectTitle: "Mathematics",
   diagnosticSubcategory: "",
   diagnosticSkillTag: "",
   explanation: ""
-};
-
-const quillModules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["blockquote", "code-block"],
-    ["link"],
-    ["clean"]
-  ]
 };
 
 export default function CreateDrill() {
@@ -47,9 +40,25 @@ export default function CreateDrill() {
     }));
   }
 
+  function updateQuestionType(questionType) {
+    setForm((current) => ({
+      ...current,
+      questionType,
+      type: questionType,
+      choiceOpts: usesOptions(questionType) ? current.choiceOpts : ["", "", "", ""],
+      answerIdx: 0,
+      correctAnswers: [],
+      correctText: "",
+      gradingPlaceholder: questionType === "paragraph" ? current.gradingPlaceholder : ""
+    }));
+  }
+
   function validateForm() {
     if (!stripHtml(form.stem)) return "Question text is required.";
-    if (form.choiceOpts.some((option) => !option.trim())) return "Options A, B, C, and D are required.";
+    if (usesOptions(form.questionType) && form.choiceOpts.some((option) => !option.trim())) return "Options A, B, C, and D are required.";
+    if (form.questionType === "checkboxes" && !form.correctAnswers.length) return "Checkbox questions need at least one correct answer.";
+    if (form.questionType === "short_answer" && !form.correctText.trim()) return "Short Answer needs a correct keyphrase answer.";
+    if (form.questionType === "paragraph" && !form.gradingPlaceholder.trim()) return "Long Paragraph needs a descriptive grading placeholder.";
     if (!form.subjectTitle.trim()) return "Subject category is required.";
     if (!form.diagnosticSubcategory.trim()) return "Sub-category is required.";
     if (!form.diagnosticSkillTag.trim()) return "Specific weakness tag is required.";
@@ -65,14 +74,111 @@ export default function CreateDrill() {
 
     const published = publishDrillQuestion({
       ...form,
-      choiceOpts: form.choiceOpts.map((option) => option.trim()),
+      type: form.questionType,
+      questionType: form.questionType,
+      questionHtml: form.stem,
+      choiceOpts: usesOptions(form.questionType) ? form.choiceOpts.map((option) => option.trim()) : [],
+      answerIdx: form.questionType === "multiple_choice" ? form.answerIdx : 0,
+      correctAnswers: form.questionType === "checkboxes" ? form.correctAnswers : [],
+      correctText: form.questionType === "short_answer" ? form.correctText.trim() : form.gradingPlaceholder.trim(),
       diagnosticSubcategory: form.diagnosticSubcategory.trim(),
-      diagnosticSkillTag: form.diagnosticSkillTag.trim()
+      diagnosticSkillTag: form.diagnosticSkillTag.trim(),
+      category: form.subjectTitle,
+      subCategory: form.diagnosticSubcategory.trim(),
+      weaknessTag: form.diagnosticSkillTag.trim(),
+      structuralTags: {
+        category: form.subjectTitle,
+        subCategory: form.diagnosticSubcategory.trim(),
+        weaknessTag: form.diagnosticSkillTag.trim(),
+        path: [form.subjectTitle, form.diagnosticSubcategory.trim(), form.diagnosticSkillTag.trim()]
+      }
     });
 
     setDrillBank(getDrillBankQuestions());
     setForm({ ...emptyForm, subjectTitle: form.subjectTitle });
     setMessage(`Published drill question to drillBankData under ${published.subjectTitle} -> ${published.diagnosticSubcategory} -> ${published.diagnosticSkillTag}.`);
+  }
+
+  function renderAnswerWorkspace() {
+    if (usesOptions(form.questionType)) {
+      return (
+        <>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {form.choiceOpts.map((option, index) => (
+              <label key={index} className="block">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Option {String.fromCharCode(65 + index)}</span>
+                <input
+                  value={option}
+                  onChange={(event) => updateOption(index, event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  placeholder={`Choice ${String.fromCharCode(65 + index)}`}
+                />
+              </label>
+            ))}
+          </div>
+
+          {form.questionType === "checkboxes" ? (
+            <div className="mt-5">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-500">Correct Answers</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {form.choiceOpts.map((_, optionIndex) => (
+                  <label key={optionIndex} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.correctAnswers.includes(optionIndex)}
+                      onChange={() => setForm((current) => ({ ...current, correctAnswers: toggleCorrectAnswer(current.correctAnswers, optionIndex) }))}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Option {String.fromCharCode(65 + optionIndex)}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <label className="mt-5 block">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-500">Correct Answer Index</span>
+              <select
+                value={form.answerIdx}
+                onChange={(event) => setForm((current) => ({ ...current, answerIdx: Number(event.target.value) }))}
+                className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              >
+                {form.choiceOpts.map((_, index) => (
+                  <option key={index} value={index}>
+                    {index} - Option {String.fromCharCode(65 + index)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </>
+      );
+    }
+
+    if (form.questionType === "short_answer") {
+      return (
+        <label className="mt-5 block">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-500">Correct Keyphrase Answer</span>
+          <input
+            value={form.correctText}
+            onChange={(event) => setForm((current) => ({ ...current, correctText: event.target.value }))}
+            className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            placeholder="Exact keyphrase students must enter"
+          />
+        </label>
+      );
+    }
+
+    return (
+      <label className="mt-5 block">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-500">Open-Ended Grading Placeholder</span>
+        <textarea
+          value={form.gradingPlaceholder}
+          onChange={(event) => setForm((current) => ({ ...current, gradingPlaceholder: event.target.value }))}
+          className="mt-2 min-h-28 w-full resize-y rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+          placeholder="Describe the expected reasoning, rubric, or evaluator notes for this long paragraph response."
+        />
+      </label>
+    );
   }
 
   return (
@@ -93,47 +199,30 @@ export default function CreateDrill() {
             <div className="glass-card p-6">
               <label className="block">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500">Question Text</span>
-                <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                  <ReactQuill
-                    theme="snow"
-                    value={form.stem}
-                    onChange={(value) => setForm((current) => ({ ...current, stem: value }))}
-                    modules={quillModules}
-                    placeholder="Write the drill question here..."
-                  />
-                </div>
+                <PremiumRichTextEditor
+                  value={form.stem}
+                  onChange={(value) => setForm((current) => ({ ...current, stem: value }))}
+                  placeholder="Write the drill question here with equations, media, links, highlights, and formatted passages..."
+                />
               </label>
             </div>
 
             <div className="glass-card p-6">
-              <p className="text-xs font-black uppercase tracking-wider text-slate-500">Answer Choices</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {form.choiceOpts.map((option, index) => (
-                  <label key={index} className="block">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">Option {String.fromCharCode(65 + index)}</span>
-                    <input
-                      value={option}
-                      onChange={(event) => updateOption(index, event.target.value)}
-                      className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                    />
-                  </label>
-                ))}
-              </div>
-
-              <label className="mt-4 block">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Correct Answer Index</span>
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Question Type</span>
                 <select
-                  value={form.answerIdx}
-                  onChange={(event) => setForm((current) => ({ ...current, answerIdx: Number(event.target.value) }))}
+                  value={form.questionType}
+                  onChange={(event) => updateQuestionType(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
-                  {form.choiceOpts.map((_, index) => (
-                    <option key={index} value={index}>
-                      {index} - Option {String.fromCharCode(65 + index)}
-                    </option>
-                  ))}
+                  <option value="multiple_choice">Multiple Choice</option>
+                  <option value="checkboxes">Checkbox</option>
+                  <option value="short_answer">Short Answer</option>
+                  <option value="paragraph">Long Paragraph</option>
                 </select>
               </label>
+
+              {renderAnswerWorkspace()}
             </div>
 
             <div className="glass-card p-6">
@@ -210,7 +299,7 @@ export default function CreateDrill() {
                 {drillBank.slice(0, 4).map((question) => (
                   <div key={question.id} className="rounded-lg border border-slate-200 p-3">
                     <p className="line-clamp-2 text-sm font-black text-slate-900">{stripHtml(question.stem)}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{question.subjectTitle} / {question.diagnosticSubcategory}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{question.subjectTitle} / {question.diagnosticSubcategory} / {formatQuestionType(question.questionType || question.type)}</p>
                   </div>
                 ))}
                 {!drillBank.length && <p className="text-sm text-slate-500">Published drill questions will appear here.</p>}
@@ -221,6 +310,25 @@ export default function CreateDrill() {
       </div>
     </main>
   );
+}
+
+function usesOptions(type) {
+  return type === "multiple_choice" || type === "mcq" || type === "checkboxes";
+}
+
+function toggleCorrectAnswer(currentAnswers, optionIndex) {
+  if (currentAnswers.includes(optionIndex)) {
+    return currentAnswers.filter((item) => item !== optionIndex);
+  }
+
+  return [...currentAnswers, optionIndex];
+}
+
+function formatQuestionType(type) {
+  if (type === "checkboxes") return "Checkbox";
+  if (type === "short_answer") return "Short Answer";
+  if (type === "paragraph") return "Long Paragraph";
+  return "Multiple Choice";
 }
 
 function stripHtml(value) {

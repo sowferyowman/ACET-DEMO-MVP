@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { FaBookOpen, FaBrain, FaChartLine, FaClipboardList, FaGraduationCap, FaSignOutAlt, FaTrophy } from "react-icons/fa";
+import { FaBookOpen, FaBrain, FaChartLine, FaClipboardList, FaCog, FaGraduationCap, FaSignOutAlt, FaTrophy } from "react-icons/fa";
 import { getCurrentUser, logoutUser } from "../services/storage";
 
 const navItems = [
@@ -7,12 +8,28 @@ const navItems = [
   { to: "/exam", label: "Mock Exams", icon: FaClipboardList },
   { to: "/reviewers", label: "Study Plan", icon: FaBookOpen },
   { to: "/weakness-drills", label: "Weakness Drills", icon: FaBrain },
-  { to: "/community", label: "Community & Rewards", icon: FaTrophy }
+  { to: "/community", label: "Community & Rewards", icon: FaTrophy },
+  { to: "/settings", label: "Settings", icon: FaCog }
 ];
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
-  const user = getCurrentUser();
+  const [user, setUser] = useState(() => getCurrentUser());
+  const displayName = user?.nickname || user?.name || user?.email || "Student";
+  const initials = getInitials(displayName);
+
+  useEffect(() => {
+    function refreshUser(event) {
+      setUser(event.detail || getCurrentUser());
+    }
+
+    window.addEventListener("currentActiveUserUpdated", refreshUser);
+    window.addEventListener("storage", refreshUser);
+    return () => {
+      window.removeEventListener("currentActiveUserUpdated", refreshUser);
+      window.removeEventListener("storage", refreshUser);
+    };
+  }, []);
 
   function logout() {
     logoutUser();
@@ -62,9 +79,9 @@ export default function DashboardLayout() {
 
         <div className="border-t border-blue-800 bg-blue-950 p-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-white text-sm font-black text-primary">SM</div>
+            <div className="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-white text-sm font-black text-primary">{initials}</div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{user?.name || "Stanley Mejia"}</p>
+              <p className="truncate text-sm font-bold">{displayName}</p>
               <p className="text-xs font-semibold text-yellow-300">Student Account</p>
             </div>
             <button onClick={logout} className="text-blue-100 transition hover:text-white" aria-label="Logout">
@@ -78,4 +95,13 @@ export default function DashboardLayout() {
       </main>
     </div>
   );
+}
+
+function getInitials(value) {
+  return String(value || "Student")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }

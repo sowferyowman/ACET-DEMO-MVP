@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FaPlus, FaSave, FaTrash } from "react-icons/fa";
 import AdminSidebar from "../components/AdminSidebar";
+import PremiumRichTextEditor from "../components/PremiumRichTextEditor";
 import {
   getExamBlueprints,
   getReviewerBlueprints,
@@ -173,7 +174,7 @@ export default function AdminDashboardPage() {
       if (!section.questions.length) return `${section.subjectTitle} needs at least one question.`;
 
       for (const question of section.questions) {
-        if (!question.stem.trim()) return "Every question needs question text.";
+        if (!stripHtml(question.stem)) return "Every question needs question text.";
         if (usesOptions(question.type) && question.choiceOpts.some((option) => !option.trim())) {
           return "Every option must be filled.";
         }
@@ -196,7 +197,7 @@ export default function AdminDashboardPage() {
 
     for (const module of reviewerForm.modules) {
       if (!module.title.trim()) return "Every module needs a title.";
-      if (!module.content.trim()) return `${module.title} needs reading material.`;
+      if (!stripHtml(module.content)) return `${module.title} needs reading material.`;
     }
 
     return "";
@@ -364,11 +365,10 @@ export default function AdminDashboardPage() {
         <div className="flex items-start justify-between gap-3">
           <label className="block flex-1">
             <span className="text-xs font-black uppercase tracking-wider text-slate-500">Question Text</span>
-            <textarea
+            <PremiumRichTextEditor
               value={question.stem}
-              onChange={(event) => updateQuestion(sectionIndex, questionIndex, { stem: event.target.value })}
-              className="mt-2 h-24 w-full resize-none rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              placeholder="Enter the question..."
+              onChange={(value) => updateQuestion(sectionIndex, questionIndex, { stem: value })}
+              placeholder="Build the exam prompt with formatted passages, media embeds, links, code, and visual emphasis..."
             />
           </label>
           <button onClick={() => removeQuestion(sectionIndex, questionIndex)} className="icon-button" aria-label="Remove question">
@@ -387,7 +387,7 @@ export default function AdminDashboardPage() {
               <option value="multiple_choice">Multiple Choice</option>
               <option value="checkboxes">Checkboxes</option>
               <option value="short_answer">Short Answer</option>
-              <option value="paragraph">Paragraph</option>
+              <option value="paragraph">Long Paragraph</option>
             </select>
           </label>
           <label>
@@ -543,11 +543,11 @@ export default function AdminDashboardPage() {
 
               <label className="block">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500">Lecture Content / Reading Material</span>
-                <textarea
+                <PremiumRichTextEditor
                   value={module.content}
-                  onChange={(event) => updateReviewerModule(module.id, { content: event.target.value })}
-                  className="mt-2 min-h-64 w-full resize-y rounded-lg border border-slate-200 px-4 py-3 text-sm leading-relaxed text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  onChange={(value) => updateReviewerModule(module.id, { content: value })}
                   placeholder="Write the lesson, explanations, worked examples, definitions, and review notes here..."
+                  minHeightClass="min-h-72"
                 />
               </label>
 
@@ -589,4 +589,12 @@ function toggleCorrectAnswer(currentAnswers, optionIndex) {
   }
 
   return [...currentAnswers, optionIndex];
+}
+
+function stripHtml(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

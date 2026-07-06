@@ -1,10 +1,14 @@
 const USERS_KEY = "exams_ph_users";
 const SESSION_KEY = "exams_ph_current_user";
+const USER_ACCOUNTS_KEY = "userAccounts";
+const CURRENT_ACTIVE_USER_KEY = "currentActiveUser";
 const EXAMS_KEY = "global_exam_blueprints";
 const REVIEWERS_KEY = "reviewersData";
 const DRILL_BANK_KEY = "drillBankData";
 const DASHBOARD_KEY = "acet_dashboard_data";
-const FORUM_KEY = "acet_forum_threads";
+const LEGACY_FORUM_KEY = "acet_forum_threads";
+const FORUM_KEY = "forumPosts";
+const NOTIFICATIONS_KEY = "notificationsData";
 const REVIEWER_PROGRESS_KEY = "reviewer_progress";
 
 const defaultUsers = [
@@ -26,6 +30,35 @@ const defaultUsers = [
   }
 ];
 
+const defaultUserAccounts = [
+  {
+    id: "admin-default",
+    username: "admin1",
+    name: "Admin Workspace",
+    nickname: "Admin",
+    email: "admin@exams.ph",
+    password: "pass1234",
+    smsNumber: "",
+    role: "admin",
+    isGoogleLinked: false,
+    profileCompleted: true,
+    academicMetrics: { target: "Admin", strengths: [], weakTags: [] }
+  },
+  {
+    id: "student-default",
+    username: "student1",
+    name: "Stanley Mejia",
+    nickname: "Stan",
+    email: "student1@exams.ph",
+    password: "123",
+    smsNumber: "+639123456789",
+    role: "student",
+    isGoogleLinked: false,
+    profileCompleted: true,
+    academicMetrics: { target: "ACET", strengths: ["Mathematics"], weakTags: ["Reading Inference"] }
+  }
+];
+
 const defaultForumThreads = [
   {
     id: "thread-gk-default",
@@ -34,11 +67,18 @@ const defaultForumThreads = [
     tag: "English / GK",
     author: "User#8821",
     authorEmail: "demo-peer@exams.ph",
+    authorId: "demo-peer",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    reactions: {
+      like: { count: 2, userIds: [] },
+      insightful: { count: 1, userIds: [] },
+      fire: { count: 0, userIds: [] }
+    },
     replies: [
       {
         id: "reply-gk-default",
         author: "User#4410",
+        authorId: "demo-replier",
         body: "Make a timeline and group presidents by major laws and historical periods.",
         createdAt: new Date(Date.now() - 70 * 60 * 1000).toISOString()
       }
@@ -81,11 +121,22 @@ export function initializeLocalStorage() {
   if (!localStorage.getItem(DRILL_BANK_KEY)) writeJson(DRILL_BANK_KEY, []);
   if (!localStorage.getItem(DASHBOARD_KEY)) writeJson(DASHBOARD_KEY, {});
   if (!localStorage.getItem(REVIEWER_PROGRESS_KEY)) writeJson(REVIEWER_PROGRESS_KEY, {});
-  if (!localStorage.getItem(FORUM_KEY)) writeJson(FORUM_KEY, defaultForumThreads);
+  if (!localStorage.getItem(FORUM_KEY)) writeJson(FORUM_KEY, readJson(LEGACY_FORUM_KEY, defaultForumThreads).map(normalizeForumThread));
+  if (!localStorage.getItem(NOTIFICATIONS_KEY)) writeJson(NOTIFICATIONS_KEY, []);
 
-  const users = readJson(USERS_KEY, defaultUsers);
-  const session = readJson(SESSION_KEY, null);
-  if (session && !users.some((user) => user.username === session.username && user.role === session.role)) {
+  if (!localStorage.getItem(USER_ACCOUNTS_KEY)) {
+    const legacyUsers = readJson(USERS_KEY, defaultUsers);
+    const accounts = mergeUserAccounts(defaultUserAccounts, legacyUsers.map(normalizeLegacyUserAccount));
+    writeJson(USER_ACCOUNTS_KEY, accounts);
+  } else {
+    const accounts = readJson(USER_ACCOUNTS_KEY, []);
+    writeJson(USER_ACCOUNTS_KEY, mergeUserAccounts(defaultUserAccounts, accounts));
+  }
+
+  const accounts = readJson(USER_ACCOUNTS_KEY, defaultUserAccounts);
+  const session = readJson(CURRENT_ACTIVE_USER_KEY, readJson(SESSION_KEY, null));
+  if (session && !accounts.some((user) => user.id === session.id || (user.email === session.email && user.role === session.role))) {
+    localStorage.removeItem(CURRENT_ACTIVE_USER_KEY);
     localStorage.removeItem(SESSION_KEY);
   }
 }
@@ -95,8 +146,13 @@ export function getUsers() {
   return readJson(USERS_KEY, defaultUsers);
 }
 
+export function getUserAccounts() {
+  initializeLocalStorage();
+  return readJson(USER_ACCOUNTS_KEY, defaultUserAccounts);
+}
+
 export function loginUser(identifier, password) {
-  const user = getUsers().find(
+  const user = getUserAccounts().find(
     (account) =>
       (account.username?.toLowerCase() === identifier.toLowerCase() ||
         account.email?.toLowerCase() === identifier.toLowerCase()) &&
@@ -110,20 +166,181 @@ export function loginUser(identifier, password) {
     username: user.username,
     email: user.email,
     role: user.role,
-    name: user.name
+    name: user.name,
+    nickname: user.nickname,
+    smsNumber: user.smsNumber,
+    isGoogleLinked: Boolean(user.isGoogleLinked),
+    profileCompleted: Boolean(user.profileCompleted),
+    academicMetrics: user.academicMetrics || { target: "", strengths: [], weakTags: [] }
   };
 
+  writeJson(CURRENT_ACTIVE_USER_KEY, sessionUser);
   writeJson(SESSION_KEY, sessionUser);
   return sessionUser;
 }
 
+export function createStudentAccount({ email, password, smsNumber }) {
+  const accounts = getUserAccounts();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail || !password) return { error: "Email and password are required." };
+  if (accounts.some((account) => account.email?.toLowerCase() === normalizedEmail)) {
+    return { error: "An account with that email already exists." };
+  }
+
+  const account = {
+    id: crypto.randomUUID(),
+    name: "",
+    nickname: "",
+    email: normalizedEmail,
+    password,
+    smsNumber: String(smsNumber || "").trim(),
+    role: "student",
+    isGoogleLinked: false,
+    profileCompleted: false,
+    academicMetrics: { target: "", strengths: [], weakTags: [] }
+  };
+
+  writeJson(USER_ACCOUNTS_KEY, [account, ...accounts]);
+  return { user: setCurrentActiveUser(account) };
+}
+
+export function signInWithGoogleProfile(profile = {}) {
+  const accounts = getUserAccounts();
+  const googleProfile = {
+    name: profile.name || "Google Student",
+    email: String(profile.email || "google.student@example.com").trim().toLowerCase()
+  };
+  const existing = accounts.find((account) => account.email?.toLowerCase() === googleProfile.email);
+  const account = existing
+    ? { ...existing, name: existing.name || googleProfile.name, isGoogleLinked: true }
+    : {
+        id: crypto.randomUUID(),
+        name: googleProfile.name,
+        nickname: "",
+        email: googleProfile.email,
+        password: "",
+        smsNumber: "",
+        role: "student",
+        isGoogleLinked: true,
+        profileCompleted: false,
+        academicMetrics: { target: "", strengths: [], weakTags: [] }
+      };
+
+  const nextAccounts = existing
+    ? accounts.map((item) => (item.id === account.id ? account : item))
+    : [account, ...accounts];
+  writeJson(USER_ACCOUNTS_KEY, nextAccounts);
+  return setCurrentActiveUser(account);
+}
+
+export function updateCurrentStudentProfile(updates) {
+  const current = getCurrentUser();
+  if (!current) return null;
+
+  const accounts = getUserAccounts();
+  const nextAccount = {
+    ...accounts.find((account) => account.id === current.id),
+    ...current,
+    ...updates,
+    academicMetrics: {
+      ...(current.academicMetrics || {}),
+      ...(updates.academicMetrics || {})
+    }
+  };
+
+  const nextAccounts = accounts.map((account) => (account.id === current.id ? { ...account, ...nextAccount } : account));
+  writeJson(USER_ACCOUNTS_KEY, nextAccounts);
+  return setCurrentActiveUser(nextAccount);
+}
+
 export function getCurrentUser() {
   initializeLocalStorage();
-  return readJson(SESSION_KEY, null);
+  return readJson(CURRENT_ACTIVE_USER_KEY, readJson(SESSION_KEY, null));
 }
 
 export function logoutUser() {
+  localStorage.removeItem(CURRENT_ACTIVE_USER_KEY);
   localStorage.removeItem(SESSION_KEY);
+}
+
+function normalizeLegacyUserAccount(user) {
+  return {
+    id: user.id || crypto.randomUUID(),
+    username: user.username,
+    name: user.name || "",
+    nickname: user.nickname || "",
+    email: user.email || "",
+    password: user.password || "",
+    smsNumber: user.smsNumber || "",
+    role: user.role || "student",
+    isGoogleLinked: Boolean(user.isGoogleLinked),
+    profileCompleted: user.role === "admin" ? true : Boolean(user.profileCompleted ?? user.name),
+    academicMetrics: user.academicMetrics || { target: user.role === "admin" ? "Admin" : "ACET", strengths: [], weakTags: [] }
+  };
+}
+
+function mergeUserAccounts(seedAccounts, storedAccounts) {
+  return [...seedAccounts, ...storedAccounts].reduce((accounts, account) => {
+    const existingIndex = accounts.findIndex(
+      (item) => item.id === account.id || (item.email && account.email && item.email.toLowerCase() === account.email.toLowerCase())
+    );
+    if (existingIndex >= 0) {
+      accounts[existingIndex] = { ...accounts[existingIndex], ...account };
+      return accounts;
+    }
+    return [...accounts, account];
+  }, []);
+}
+
+function setCurrentActiveUser(user) {
+  const sessionUser = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role || "student",
+    name: user.name || "",
+    nickname: user.nickname || "",
+    smsNumber: user.smsNumber || "",
+    isGoogleLinked: Boolean(user.isGoogleLinked),
+    profileCompleted: Boolean(user.profileCompleted),
+    academicMetrics: user.academicMetrics || { target: "", strengths: [], weakTags: [] }
+  };
+
+  writeJson(CURRENT_ACTIVE_USER_KEY, sessionUser);
+  writeJson(SESSION_KEY, sessionUser);
+  window.dispatchEvent(new CustomEvent("currentActiveUserUpdated", { detail: sessionUser }));
+  return sessionUser;
+}
+
+function getUserDisplayName(user) {
+  return user?.nickname || user?.name || user?.username || user?.email || "Student";
+}
+
+function normalizeForumThread(thread) {
+  return {
+    ...thread,
+    author: thread.author || "Student",
+    authorId: thread.authorId || thread.userId || "",
+    authorEmail: thread.authorEmail || "",
+    reactions: normalizeReactions(thread.reactions),
+    replies: (thread.replies || []).map((reply) => ({
+      ...reply,
+      author: reply.author || "Student",
+      authorId: reply.authorId || reply.userId || "",
+      createdAt: reply.createdAt || new Date().toISOString()
+    }))
+  };
+}
+
+function normalizeReactions(reactions = {}) {
+  return ["like", "insightful", "fire"].reduce((nextReactions, type) => {
+    const reaction = reactions[type] || {};
+    nextReactions[type] = {
+      count: Number(reaction.count || 0),
+      userIds: Array.isArray(reaction.userIds) ? reaction.userIds : []
+    };
+    return nextReactions;
+  }, {});
 }
 
 export function getExamBlueprints() {
@@ -146,6 +363,7 @@ export function publishExamBlueprint(blueprint) {
   };
 
   writeJson(EXAMS_KEY, [...blueprints, nextBlueprint]);
+  createExamPublishedNotifications(nextBlueprint);
   return nextBlueprint;
 }
 
@@ -174,10 +392,25 @@ export function getDrillBankQuestions() {
 
 export function publishDrillQuestion(question) {
   const drillBank = getDrillBankQuestions();
+  const type = question.type || question.questionType || "multiple_choice";
+  const category = question.category || question.subjectTitle || "General Practice";
+  const subCategory = question.subCategory || question.diagnosticSubcategory || "";
+  const weaknessTag = question.weaknessTag || question.diagnosticSkillTag || "";
   const nextQuestion = {
     ...question,
     id: crypto.randomUUID(),
-    type: "multiple_choice",
+    type,
+    questionType: question.questionType || type,
+    questionHtml: question.questionHtml || question.stem,
+    category,
+    subCategory,
+    weaknessTag,
+    structuralTags: question.structuralTags || {
+      category,
+      subCategory,
+      weaknessTag,
+      path: [category, subCategory, weaknessTag].filter(Boolean)
+    },
     status: "published",
     createdAt: new Date().toISOString()
   };
@@ -453,20 +686,120 @@ export function getLeaderboard(currentEmail) {
 
 export function getForumThreads() {
   initializeLocalStorage();
-  return readJson(FORUM_KEY, defaultForumThreads).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return readJson(FORUM_KEY, defaultForumThreads).map(normalizeForumThread).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 export function createForumThread(user, payload) {
   const threads = getForumThreads();
-  const nextThread = { id: crypto.randomUUID(), title: payload.title, body: payload.body, tag: payload.tag, author: user.name || user.username, authorEmail: user.email, createdAt: new Date().toISOString(), replies: [] };
+  const nextThread = normalizeForumThread({
+    id: crypto.randomUUID(),
+    title: payload.title,
+    body: payload.body,
+    tag: payload.tag,
+    author: getUserDisplayName(user),
+    authorId: user?.id,
+    authorEmail: user?.email,
+    createdAt: new Date().toISOString(),
+    replies: []
+  });
   writeJson(FORUM_KEY, [nextThread, ...threads]);
+  window.dispatchEvent(new CustomEvent("forumPostsUpdated", { detail: nextThread }));
   return nextThread;
 }
 
 export function addForumReply(user, threadId, body) {
   const threads = getForumThreads();
-  const updated = threads.map((thread) => thread.id === threadId ? { ...thread, replies: [...(thread.replies || []), { id: crypto.randomUUID(), author: user.name || user.username, authorEmail: user.email, body, createdAt: new Date().toISOString() }] } : thread);
+  let targetThread = null;
+  const reply = { id: crypto.randomUUID(), author: getUserDisplayName(user), authorId: user?.id, authorEmail: user?.email, body, createdAt: new Date().toISOString() };
+  const updated = threads.map((thread) => {
+    if (thread.id !== threadId) return thread;
+    targetThread = thread;
+    return { ...thread, replies: [...(thread.replies || []), reply] };
+  });
   writeJson(FORUM_KEY, updated);
+  if (targetThread?.authorId && targetThread.authorId !== user?.id) {
+    createNotification({
+      userId: targetThread.authorId,
+      type: "new_reply",
+      message: `${reply.author} replied to your post: ${targetThread.title}`,
+      metadata: { threadId, replyId: reply.id }
+    });
+  }
+  window.dispatchEvent(new CustomEvent("forumPostsUpdated", { detail: { threadId, reply } }));
+  return reply;
+}
+
+export function toggleForumReaction(threadId, reactionType, userId) {
+  const threads = getForumThreads();
+  const updated = threads.map((thread) => {
+    if (thread.id !== threadId) return thread;
+    const reactions = normalizeReactions(thread.reactions);
+    const reaction = reactions[reactionType] || { count: 0, userIds: [] };
+    const userIds = reaction.userIds || [];
+    const active = userIds.includes(userId);
+    const nextUserIds = active ? userIds.filter((id) => id !== userId) : [...userIds, userId];
+    return {
+      ...thread,
+      reactions: {
+        ...reactions,
+        [reactionType]: {
+          count: Math.max(0, Number(reaction.count || 0) + (active ? -1 : 1)),
+          userIds: nextUserIds
+        }
+      }
+    };
+  });
+  writeJson(FORUM_KEY, updated);
+  window.dispatchEvent(new CustomEvent("forumPostsUpdated"));
+  return updated.find((thread) => thread.id === threadId);
+}
+
+export function getNotificationsForUser(userId) {
+  initializeLocalStorage();
+  return readJson(NOTIFICATIONS_KEY, [])
+    .filter((notification) => notification.userId === userId)
+    .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+}
+
+export function markNotificationsRead(userId, notificationId = null) {
+  const notifications = readJson(NOTIFICATIONS_KEY, []);
+  const updated = notifications.map((notification) => {
+    const matchesUser = notification.userId === userId;
+    const matchesItem = !notificationId || notification.id === notificationId;
+    return matchesUser && matchesItem ? { ...notification, isRead: true } : notification;
+  });
+  writeJson(NOTIFICATIONS_KEY, updated);
+  window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+  return updated.filter((notification) => notification.userId === userId);
+}
+
+function createExamPublishedNotifications(exam) {
+  const students = getUserAccounts().filter((account) => account.role === "student");
+  students.forEach((student) => {
+    createNotification({
+      userId: student.id,
+      type: "new_exam",
+      message: `New Exam Posted: ${exam.title || "Untitled Mock Exam"}`,
+      metadata: { examId: exam.id }
+    });
+  });
+}
+
+function createNotification({ userId, type, message, metadata = {} }) {
+  if (!userId) return null;
+  const notifications = readJson(NOTIFICATIONS_KEY, []);
+  const nextNotification = {
+    id: crypto.randomUUID(),
+    userId,
+    type,
+    message,
+    isRead: false,
+    timestamp: Date.now(),
+    metadata
+  };
+  writeJson(NOTIFICATIONS_KEY, [nextNotification, ...notifications]);
+  window.dispatchEvent(new CustomEvent("notificationsUpdated", { detail: nextNotification }));
+  return nextNotification;
 }
 
 function calculateAttemptPoints(finalPct, durationSeconds = 0) {

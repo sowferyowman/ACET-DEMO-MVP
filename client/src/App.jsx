@@ -9,6 +9,8 @@ import ExamPage from "./pages/ExamPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import ReviewersPage from "./pages/ReviewersPage";
+import SettingsPage from "./pages/SettingsPage";
+import StudentProfilingPage from "./pages/StudentProfilingPage";
 import WeaknessDrillsPage from "./pages/WeaknessDrillsPage";
 
 export default function App() {
@@ -18,6 +20,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute allowedRole="student" />}>
+        <Route path="/student-profiling" element={<StudentProfilingPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardPage />} />
         </Route>
@@ -30,6 +33,9 @@ export default function App() {
         </Route>
         <Route path="/community" element={<DashboardLayout />}>
           <Route index element={<CommunityRewards />} />
+        </Route>
+        <Route path="/settings" element={<DashboardLayout />}>
+          <Route index element={<SettingsPage />} />
         </Route>
       </Route>
 
