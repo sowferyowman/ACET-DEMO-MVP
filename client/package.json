@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "acet-exam-mvp": "file:..",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
     "framer-motion": "^11.15.0",
