@@ -923,11 +923,18 @@ export function getReviewerProgress(email) {
 }
 
 export function markReviewerModuleComplete(email, reviewerId, moduleId) {
+  return setReviewerModuleCompletion(email, reviewerId, moduleId, true);
+}
+
+export function setReviewerModuleCompletion(email, reviewerId, moduleId, completed) {
   const progress = readJson(REVIEWER_PROGRESS_KEY, {});
   const userProgress = progress[email] || {};
   const moduleSet = new Set(userProgress[reviewerId] || []);
-  moduleSet.add(moduleId);
-  writeJson(REVIEWER_PROGRESS_KEY, { ...progress, [email]: { ...userProgress, [reviewerId]: [...moduleSet] } });
+  if (completed) moduleSet.add(moduleId);
+  else moduleSet.delete(moduleId);
+  const nextProgress = { ...progress, [email]: { ...userProgress, [reviewerId]: [...moduleSet] } };
+  writeJson(REVIEWER_PROGRESS_KEY, nextProgress);
+  return nextProgress[email];
 }
 
 export function getCommunityRewardSummary(email) {

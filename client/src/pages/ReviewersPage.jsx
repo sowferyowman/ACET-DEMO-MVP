@@ -1,34 +1,37 @@
 import { useState } from "react";
-import { FaBookOpen, FaCheckCircle, FaPlayCircle } from "react-icons/fa";
-import { getCurrentUser, getReviewerBlueprints, getReviewerProgress, markReviewerModuleComplete } from "../services/storage";
+import { FaBookOpen, FaCheckCircle } from "react-icons/fa";
+import ResourceCard from "../features/studyPlan/ResourceCard";
+import { getCurrentUser, getReviewerBlueprints, getReviewerProgress, setReviewerModuleCompletion } from "../services/storage";
 
 export default function ReviewersPage() {
   const user = getCurrentUser();
   const reviewers = getReviewerBlueprints();
   const [progress, setProgress] = useState(() => getReviewerProgress(user?.email));
 
-  function completeModule(reviewerId, moduleId) {
-    markReviewerModuleComplete(user.email, reviewerId, moduleId);
-    setProgress(getReviewerProgress(user.email));
+  function toggleModule(reviewerId, moduleId, completed) {
+    const nextProgress = setReviewerModuleCompletion(user.email, reviewerId, moduleId, !completed);
+    setProgress(nextProgress);
   }
 
   if (!reviewers.length) {
     return (
-      <div className="mx-auto max-w-7xl">
-        <div className="glass-card p-8">
-          <p className="text-sm font-bold uppercase tracking-wider text-slate-500">No reviewers yet</p>
-          <h2 className="mt-2 text-2xl font-black text-slate-950">Admin-created reviewers will appear here.</h2>
-          <p className="mt-2 text-sm text-slate-500">Publish a reviewer from the Admin Workspace to sync course modules into this student view.</p>
+      <div className="page-shell">
+        <header className="page-header"><p className="page-eyebrow">Study Plan</p><h1 className="page-title">Published Study Modules</h1><p className="page-description">Work through the reading materials and resources prepared for your ACET review.</p></header>
+        <div className="state-panel border-l-4 border-slate-300">
+          <p className="text-sm font-bold uppercase tracking-wider text-slate-500">No study modules yet</p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">Published study materials will appear here.</h2>
+          <p className="mt-2 text-sm text-slate-600">Check back after new reviewers have been made available.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <header>
-        <p className="text-sm font-black uppercase tracking-wider text-blue-600">Student Reviewers</p>
-        <h1 className="mt-2 text-3xl font-black text-slate-950">Published Study Modules</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Study Plan</p>
+        <h1 className="page-title">Published Study Modules</h1>
+        <p className="page-description">Read each module, use its attached resource, and update your progress as you study.</p>
       </header>
 
       <div className="space-y-6">
@@ -54,31 +57,20 @@ export default function ReviewersPage() {
                   const completed = completedModules.includes(module.id);
                   return (
                     <section key={module.id} className="grid gap-6 p-6 lg:grid-cols-[1fr_18rem]">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-black uppercase tracking-wider text-slate-400">Chapter {index + 1}</p>
                         <h3 className="mt-1 text-xl font-black text-slate-900">{module.title}</h3>
                         <div className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">{module.content}</div>
                         <button
-                          onClick={() => completeModule(reviewer.id, module.id)}
-                          disabled={completed}
-                          className={`mt-5 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black ${completed ? "bg-emerald-50 text-emerald-700" : "bg-primary text-white hover:bg-blue-800"}`}
+                          onClick={() => toggleModule(reviewer.id, module.id, completed)}
+                          aria-pressed={completed}
+                          className={`mt-5 inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-4 ${completed ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus-visible:ring-emerald-100" : "border-primary bg-primary text-white hover:bg-blue-800 focus-visible:ring-blue-100"}`}
                         >
-                          <FaCheckCircle /> {completed ? "Completed" : "Mark as Complete"}
+                          <FaCheckCircle /> {completed ? "Mark as incomplete" : "Mark as complete"}
                         </button>
                       </div>
 
-                      <aside className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-                          <FaPlayCircle className="text-blue-600" /> Video Resource
-                        </div>
-                        {module.videoUrl ? (
-                          <a href={module.videoUrl} target="_blank" rel="noreferrer" className="mt-3 block break-words text-sm font-bold text-blue-700 hover:text-blue-900">
-                            {module.videoUrl}
-                          </a>
-                        ) : (
-                          <p className="mt-3 text-sm text-slate-500">No video link provided for this module.</p>
-                        )}
-                      </aside>
+                      <aside><ResourceCard url={module.videoUrl} title={module.title} /></aside>
                     </section>
                   );
                 })}

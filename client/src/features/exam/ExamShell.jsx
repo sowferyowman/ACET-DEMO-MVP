@@ -11,7 +11,6 @@ function formatTime(total) {
 export default function ExamShell(props) {
   const {
     phase,
-    examTitle,
     setPhase,
     sections,
     activeSection,
@@ -43,27 +42,6 @@ export default function ExamShell(props) {
   useEffect(() => {
     if (phase === "testing" && timeLeft === 0) onNext();
   }, [phase, timeLeft, onNext]);
-
-  if (phase === "welcome") {
-    return (
-      <div className="grid min-h-screen place-items-center bg-slate-100 p-6">
-        <div className="glass-card max-w-2xl p-8 text-center">
-          <h1 className="text-4xl font-black text-slate-950">{examTitle || "Mock Exam"}</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
-            Complete section-based questions, timed subject blocks, a written essay, and dynamic results with AI drill recommendations.
-          </p>
-          <div className="mt-8 flex justify-center gap-3">
-            <button onClick={onExit} className="rounded-lg border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50">
-              Back
-            </button>
-            <button onClick={() => setPhase("intermission")} className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-blue-800">
-              Begin Exam
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (phase === "intermission") {
     return (

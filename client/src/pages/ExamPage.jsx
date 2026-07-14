@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaArrowLeft, FaBookOpen, FaClock, FaClipboardCheck, FaLayerGroup, FaPlay } from "react-icons/fa";
 import ExamShell from "../features/exam/ExamShell";
 import ResultsView from "../features/exam/ResultsView";
 import {
@@ -46,8 +47,7 @@ export default function ExamPage() {
         if (!mounted) return;
 
         if (!activeBlueprint) {
-          setError("No published exam is available yet. Ask an admin to publish a mock exam.");
-          setPhase("error");
+          setPhase("empty");
           return;
         }
 
@@ -57,11 +57,11 @@ export default function ExamPage() {
         const initialMetrics = createEmptyQuestionMetrics(activeBlueprint.sections);
         questionMetricsRef.current = initialMetrics;
         setQuestionMetrics(initialMetrics);
-        setPhase("welcome");
+        setPhase("overview");
       } catch (err) {
         console.error("Exam blueprint storage error:", err);
         if (mounted) {
-          setError("Unable to load the exam blueprint from localStorage.");
+          setError("The published exam could not be loaded. Please return to the dashboard and try again.");
           setPhase("error");
         }
       }
@@ -152,7 +152,7 @@ export default function ExamPage() {
       setPhase("results");
     } catch (err) {
       console.error("Exam submission storage error:", err);
-      setError("Unable to save the exam attempt to localStorage.");
+      setError("Your exam attempt could not be saved. Please return to the dashboard and try again.");
       setPhase("error");
     }
   }, [blueprint, recordActiveQuestionTime, responses, startedAt]);
@@ -201,12 +201,76 @@ export default function ExamPage() {
     return (
       <div className="grid min-h-screen place-items-center bg-slate-100 p-6">
         <div className="glass-card max-w-xl p-8 text-center">
-          <p className="text-xs font-black uppercase tracking-wider text-blue-600">
+          <p className="page-eyebrow">
             {phase === "loading" ? "Loading Exam" : "Submitting Attempt"}
           </p>
           <h1 className="mt-3 text-3xl font-black text-slate-950">
-            {phase === "loading" ? "Fetching the active exam from localStorage..." : "Saving your results to localStorage..."}
+            {phase === "loading" ? "Preparing the available mock exam..." : "Saving your scored attempt..."}
           </h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "empty") {
+    return (
+      <div className="min-h-screen bg-slate-50 p-5 md:p-8">
+        <div className="page-shell">
+          <header className="page-header">
+            <p className="page-eyebrow">Mock Exams</p>
+            <h1 className="page-title">ACET Mock Exams</h1>
+            <p className="page-description">Practice the exam experience with scored, section-based mock tests.</p>
+          </header>
+          <section className="state-panel border-l-4 border-slate-300">
+            <div className="inline-flex rounded-xl bg-slate-100 p-3 text-xl text-slate-600"><FaClipboardCheck /></div>
+            <h2 className="mt-5 text-2xl font-black text-slate-950">No mock exam has been published yet.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">An administrator needs to publish an exam before you can begin. You can continue with your dashboard or study plan in the meantime.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" onClick={() => navigate("/dashboard")} className="button-primary"><FaArrowLeft /> Dashboard</button>
+              <button type="button" onClick={() => navigate("/reviewers")} className="button-secondary"><FaBookOpen /> Study Plan</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "overview") {
+    const questionCount = sections.reduce((total, section) => total + (section.questions?.length || 0), 0);
+    const durationSeconds = sections.reduce((total, section) => total + Number(section.allottedTimeSec || 0), 0);
+    const durationMinutes = durationSeconds > 0 ? Math.ceil(durationSeconds / 60) : null;
+
+    return (
+      <div className="min-h-screen bg-slate-50 p-5 md:p-8">
+        <div className="mx-auto max-w-5xl space-y-6">
+          <button type="button" onClick={() => navigate("/dashboard")} className="button-subtle -ml-4"><FaArrowLeft /> Back to Dashboard</button>
+          <section className="card-section overflow-hidden p-0 md:p-0">
+            <div className="border-b border-blue-100 bg-blue-50 p-5 md:p-8">
+              <p className="page-eyebrow">Published Mock Exam</p>
+              <h1 className="mt-2 break-words text-3xl font-black text-slate-950 md:text-4xl">{blueprint?.title || "ACET Mock Exam"}</h1>
+              {blueprint?.description && <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{blueprint.description}</p>}
+            </div>
+            <div className="space-y-6 p-5 md:p-8">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <ExamFact icon={FaLayerGroup} label="Sections" value={sections.length} />
+                <ExamFact icon={FaClipboardCheck} label="Questions" value={questionCount} />
+                {durationMinutes !== null && <ExamFact icon={FaClock} label="Estimated time" value={`${durationMinutes} min`} />}
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <h2 className="text-lg font-black text-slate-950">Before you begin</h2>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                  <li>Each section has its own timer and begins after a short section overview.</li>
+                  <li>You can move between questions within the current section before its time expires.</li>
+                  <li>Your answers, answer changes, and time per question are recorded for scoring and diagnostics.</li>
+                  <li>Leaving the exam before submission will end this session without saving a scored attempt.</li>
+                </ul>
+              </div>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => navigate("/dashboard")} className="button-secondary">Return to Dashboard</button>
+                <button type="button" onClick={() => updatePhase("intermission")} className="button-primary"><FaPlay /> Start ACET Mock Exam</button>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -214,12 +278,12 @@ export default function ExamPage() {
 
   if (phase === "error") {
     return (
-      <div className="grid min-h-screen place-items-center bg-slate-100 p-6">
-        <div className="glass-card max-w-xl border-l-4 border-rose-500 p-8">
-          <p className="text-xs font-black uppercase tracking-wider text-rose-600">Exam unavailable</p>
-          <h1 className="mt-3 text-3xl font-black text-slate-950">Exam flow unavailable.</h1>
+      <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
+        <div className="state-panel max-w-xl border-l-4 border-rose-500" role="alert">
+          <p className="text-xs font-black uppercase tracking-wider text-rose-600">Unable to load exam</p>
+          <h1 className="mt-3 text-3xl font-black text-slate-950">Something went wrong while preparing the exam.</h1>
           <p className="mt-3 text-sm text-slate-600">{error}</p>
-          <button onClick={() => navigate("/dashboard")} className="mt-6 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-blue-800">
+          <button onClick={() => navigate("/dashboard")} className="button-primary mt-6">
             Back to Dashboard
           </button>
         </div>
@@ -234,7 +298,6 @@ export default function ExamPage() {
   return (
     <ExamShell
       phase={phase}
-      examTitle={blueprint?.title}
       setPhase={updatePhase}
       sections={sections}
       activeSection={activeSection}
@@ -250,5 +313,16 @@ export default function ExamPage() {
       onJump={jump}
       onExit={() => navigate("/dashboard")}
     />
+  );
+}
+
+function ExamFact({ icon: Icon, label, value }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-3">
+        <span className="rounded-lg bg-blue-50 p-2.5 text-primary"><Icon /></span>
+        <div><p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-950">{value}</p></div>
+      </div>
+    </div>
   );
 }

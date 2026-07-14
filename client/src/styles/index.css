@@ -15,8 +15,48 @@
     @apply rounded-2xl border border-slate-100 bg-white shadow-soft;
   }
 
+  .page-shell {
+    @apply mx-auto max-w-7xl space-y-6;
+  }
+
+  .page-header {
+    @apply space-y-1;
+  }
+
+  .page-eyebrow {
+    @apply text-xs font-black uppercase tracking-wider text-blue-700;
+  }
+
+  .page-title {
+    @apply text-3xl font-black tracking-tight text-slate-950;
+  }
+
+  .page-description {
+    @apply max-w-3xl text-sm font-medium leading-6 text-slate-600;
+  }
+
+  .card-section {
+    @apply glass-card p-5 md:p-6;
+  }
+
+  .button-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .button-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .button-subtle {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100;
+  }
+
+  .state-panel {
+    @apply glass-card p-6 md:p-8;
+  }
+
   .icon-button {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50;
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100;
   }
 
   .premium-quill-shell {

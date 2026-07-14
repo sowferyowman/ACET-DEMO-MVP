@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { FaArrowLeft, FaBrain, FaCheckCircle, FaPlay, FaTimesCircle } from "react-icons/fa";
 import { getCurrentUser, getQuestionsForSubject, getWeaknessAnalysis, scoreDrillAttempt } from "../services/storage";
 
@@ -39,8 +40,18 @@ export default function WeaknessDrillsPage() {
 
   if (!analysis.hasAttempts) {
     return (
-      <div className="mx-auto max-w-7xl">
-        <DiagnosticReport analysis={analysis} />
+      <div className="page-shell">
+        <header className="page-header">
+          <p className="page-eyebrow">Weakness Drills</p>
+          <h1 className="page-title">Recommended Practice Blocks</h1>
+          <p className="page-description">Targeted practice is based on your completed mock exam results.</p>
+        </header>
+        <section className="state-panel border-l-4 border-blue-600">
+          <div className="inline-flex rounded-xl bg-blue-50 p-3 text-xl text-primary"><FaBrain /></div>
+          <h2 className="mt-5 text-2xl font-black text-slate-950">Complete a mock exam to receive drill recommendations.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">After your first scored attempt, this page will use your subject results and question diagnostics to identify useful practice areas.</p>
+          <Link to="/exam" className="button-primary mt-6"><FaPlay /> View Mock Exams</Link>
+        </section>
       </div>
     );
   }
@@ -48,20 +59,20 @@ export default function WeaknessDrillsPage() {
   if (activeSubject) {
     return (
       <div className="mx-auto max-w-5xl space-y-6">
-        <button onClick={() => setActiveSubject(null)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        <button onClick={() => setActiveSubject(null)} className="button-secondary">
           <FaArrowLeft /> Back to Recommendations
         </button>
 
-        <header>
-          <p className="text-sm font-black uppercase tracking-wider text-blue-600">Weakness Drill</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950">{activeSubject} Practice Block</h1>
-          <p className="mt-1 text-sm text-slate-500">Questions are pulled from Admin-published exams in this subject category.</p>
+        <header className="page-header">
+          <p className="page-eyebrow">Weakness Drill</p>
+          <h1 className="page-title">{activeSubject} Practice Block</h1>
+          <p className="page-description">Practice questions currently available for this subject category.</p>
         </header>
 
         {!questions.length ? (
           <div className="glass-card p-8">
             <h2 className="text-2xl font-black text-slate-950">No question pool available yet.</h2>
-            <p className="mt-2 text-sm text-slate-500">Ask an admin to publish Create Drill questions under {activeSubject} in drillBankData.</p>
+            <p className="mt-2 text-sm text-slate-600">No practice questions are available for this subject yet.</p>
           </div>
         ) : (
           <div className="space-y-5">
@@ -105,11 +116,11 @@ export default function WeaknessDrillsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <header>
-        <p className="text-sm font-black uppercase tracking-wider text-blue-600">Weakness Drills</p>
-        <h1 className="mt-2 text-3xl font-black text-slate-950">Recommended Practice Blocks</h1>
-        <p className="mt-1 text-sm text-slate-500">Generated from your weakest mock exam subject categories.</p>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Weakness Drills</p>
+        <h1 className="page-title">Recommended Practice Blocks</h1>
+        <p className="page-description">Based on your lowest-performing mock exam subject categories.</p>
       </header>
 
       <DiagnosticReport analysis={analysis} />
@@ -191,7 +202,7 @@ function DiagnosticReport({ analysis }) {
     <section className="glass-card border-l-4 border-blue-600 bg-blue-50/40 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-wider text-blue-600">AI Performance Diagnostic Report</p>
+      <p className="text-xs font-black uppercase tracking-wider text-blue-600">Performance Diagnostic</p>
           <h2 className="mt-2 text-2xl font-black text-slate-950">{diagnostic ? getDiagnosticHeadline(diagnostic) : "Personalized insights unlock after your first mock."}</h2>
         </div>
         {diagnostic && (
@@ -224,8 +235,8 @@ function buildDiagnosticNarrative(analysis) {
   const diagnostic = analysis.primaryDiagnostic;
   if (!analysis.hasAttempts || !diagnostic) {
     return analysis.hasAttempts
-      ? "Complete another mock exam so our AI engine can capture per-question timing, answer changes, and diagnostic tags for a sharper behavioral report."
-      : "Take a mock exam first so our AI engine can map your performance bottlenecks and generate personalized behavioral insights!";
+      ? "Complete another mock exam to add more per-question timing, answer-change, and diagnostic data to this report."
+      : "Take a mock exam first to identify performance bottlenecks and useful practice areas.";
   }
 
   const target = diagnostic.skillTag && diagnostic.skillTag !== "Untyped Skill"
@@ -234,14 +245,14 @@ function buildDiagnosticNarrative(analysis) {
   const remainingQuestions = Math.max(1, Math.round(diagnostic.errors * 2));
 
   if (diagnostic.insightType === "self-doubt") {
-    return `Our AI detected a pattern of self-doubt: You are changing correct choices to wrong answers under pressure during ${diagnostic.category}. Trust your first instinct, especially when the item is tagged as ${target}.`;
+    return `Your recent attempts show correct choices changing to wrong answers under pressure during ${diagnostic.category}. Review your reasoning before changing an answer, especially for ${target}.`;
   }
 
   if (diagnostic.insightType === "time-bottleneck") {
-    return `Our AI has isolated the exact bottleneck holding your score back: ${target}. You spend an average of ${formatAverageTime(diagnostic.averageSeconds)} on these questions, causing you to rush the final ${remainingQuestions} remaining questions in that block.`;
+    return `Timing data points to a bottleneck in ${target}. You spend an average of ${formatAverageTime(diagnostic.averageSeconds)} on these questions, which may leave less time for the final ${remainingQuestions} questions in that block.`;
   }
 
-  return `Our AI has isolated a structural point-loss pattern in ${target}. The issue is not just the subject score; your misses are clustering around this question type, so the drills below will prioritize the exact label path admins attach to those items.`;
+  return `Your misses are clustering around ${target}. The drills below prioritize available questions that match those diagnostic labels.`;
 }
 
 function getDiagnosticHeadline(diagnostic) {

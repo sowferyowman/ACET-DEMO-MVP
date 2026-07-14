@@ -10,66 +10,72 @@ export default function SettingsPage() {
     smsNumber: currentUser?.smsNumber || ""
   });
   const [message, setMessage] = useState("");
+  const normalizedSms = form.smsNumber.replace(/[\s()-]/g, "");
+  const smsIsValid = !normalizedSms || /^\+?\d{10,15}$/.test(normalizedSms);
 
   function saveSettings(event) {
     event.preventDefault();
+    if (!smsIsValid) {
+      setMessage("Enter a valid mobile number before saving.");
+      return;
+    }
     updateCurrentStudentProfile({
       name: form.name.trim(),
       nickname: form.nickname.trim(),
       smsNumber: form.smsNumber.trim()
     });
-    setMessage("Settings saved. Your sidebar profile has been updated.");
+    setMessage("Settings saved. Your profile has been updated.");
   }
 
   const displayName = form.nickname || form.name || currentUser?.email || "Student";
   const initials = getInitials(displayName);
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-black uppercase tracking-wider text-blue-600">Student Workspace</p>
-        <h1 className="text-3xl font-black text-slate-950">Settings</h1>
-        <p className="mt-1 text-sm font-semibold text-slate-500">Manage identity, recovery, and connected services for this local student account.</p>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Account</p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-description">Manage the profile, recovery information, and connected service already supported by your account.</p>
       </header>
 
       <form onSubmit={saveSettings} className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <section className="space-y-6">
-          <div className="glass-card p-6">
+          <div className="card-section">
             <div className="flex items-center gap-4">
               <div className="grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-xl font-black text-primary">
                 {initials || <FaUserCircle />}
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-500">Profile Avatar Placeholder</p>
+                <p className="text-xs font-black uppercase tracking-wider text-slate-500">Profile</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">{displayName}</h2>
               </div>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <Field label="Displayed Name" value={form.name} onChange={(name) => setForm((current) => ({ ...current, name }))} placeholder="Full name" />
-              <Field label="Nickname" value={form.nickname} onChange={(nickname) => setForm((current) => ({ ...current, nickname }))} placeholder="Sidebar display name" />
+              <Field label="Name" value={form.name} onChange={(name) => setForm((current) => ({ ...current, name }))} placeholder="Full name" autoComplete="name" />
+              <Field label="Display name or nickname" value={form.nickname} onChange={(nickname) => setForm((current) => ({ ...current, nickname }))} placeholder="Name shown in the app" />
             </div>
           </div>
 
-          <div className="glass-card p-6">
+          <div className="card-section">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-50 text-primary">
                 <FaMobileAlt />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-500">Security & Recovery</p>
-                <h2 className="text-xl font-black text-slate-950">SMS Recovery Number</h2>
+                <p className="text-xs font-black uppercase tracking-wider text-slate-500">Recovery</p>
+                <h2 className="text-xl font-black text-slate-950">Recovery Number</h2>
               </div>
             </div>
-            <Field label="Linked Mobile Number (SMS)" value={form.smsNumber} onChange={(smsNumber) => setForm((current) => ({ ...current, smsNumber }))} placeholder="+639123456789" className="mt-5" />
+            <Field label="Mobile number" value={form.smsNumber} onChange={(smsNumber) => setForm((current) => ({ ...current, smsNumber }))} placeholder="+639123456789" className="mt-5" type="tel" autoComplete="tel" invalid={!smsIsValid} helper="Use 10–15 digits, optionally starting with +. This stores recovery information only; SMS recovery is not enabled in this MVP." />
           </div>
         </section>
 
         <aside className="space-y-6">
-          <div className="glass-card p-6">
+          <div className="card-section">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-rose-50 text-rose-500">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-slate-600">
                   <FaGoogle />
                 </div>
                 <div>
@@ -84,19 +90,22 @@ export default function SettingsPage() {
             <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
               {currentUser?.isGoogleLinked
                 ? "This profile was created or accessed through Google Sign-In."
-                : "Use the Google button on the login page to link a Google-backed student profile."}
+                : "This account is not currently associated with Google Sign-In."}
             </p>
           </div>
 
-          <div className="glass-card p-6">
-            <p className="text-xs font-black uppercase tracking-wider text-slate-500">Account Health</p>
-            <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700">
-              <FaCheckCircle />
-              <p className="text-sm font-black">Profile onboarding complete</p>
+          <div className="card-section">
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500">Profile setup</p>
+            <h2 className="mt-1 text-lg font-black text-slate-950">Setup checklist</h2>
+            <div className="mt-4 space-y-3">
+              <ChecklistItem complete={Boolean(form.name.trim())} label="Name added" />
+              <ChecklistItem complete={Boolean(form.nickname.trim())} label="Display name or nickname added" />
+              <ChecklistItem complete={Boolean(form.smsNumber.trim()) && smsIsValid} label="Recovery number added" />
+              <ChecklistItem complete={Boolean(currentUser?.isGoogleLinked)} label="Google account linked (optional)" />
             </div>
           </div>
 
-          <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800">
+          <button className="button-primary w-full" disabled={!smsIsValid}>
             <FaSave /> Save Settings
           </button>
           {message && <p className="rounded-lg bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">{message}</p>}
@@ -106,17 +115,32 @@ export default function SettingsPage() {
   );
 }
 
-function Field({ label, value, onChange, placeholder, className = "" }) {
+function Field({ label, value, onChange, placeholder, className = "", helper, invalid = false, type = "text", autoComplete }) {
   return (
     <label className={`block ${className}`}>
       <span className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</span>
       <input
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+        autoComplete={autoComplete}
+        aria-invalid={invalid}
+        className={`mt-2 w-full rounded-lg border px-4 py-3 text-sm font-semibold outline-none focus:ring-4 ${invalid ? "border-rose-400 focus:border-rose-500 focus:ring-rose-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-100"}`}
         placeholder={placeholder}
       />
+      {helper && <span className={`mt-2 block text-xs leading-5 ${invalid ? "font-semibold text-rose-600" : "text-slate-500"}`}>{invalid ? "Enter 10–15 digits, optionally starting with +." : helper}</span>}
     </label>
+  );
+}
+
+function ChecklistItem({ complete, label }) {
+  return (
+    <div className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+      <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${complete ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+        {complete ? <FaCheckCircle /> : <span aria-hidden="true">•</span>}
+      </span>
+      <span>{label}{!complete && !label.includes("optional") ? " — missing" : ""}</span>
+    </div>
   );
 }
 
