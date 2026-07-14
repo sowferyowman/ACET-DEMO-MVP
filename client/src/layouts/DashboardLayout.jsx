@@ -1,26 +1,32 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { FaBookOpen, FaBrain, FaChartLine, FaClipboardList, FaCog, FaGraduationCap, FaSignOutAlt, FaTrophy } from "react-icons/fa";
-import { getCurrentUser, logoutUser } from "../services/storage";
+import { FaBell, FaBookOpen, FaBrain, FaChartLine, FaClipboardList, FaCog, FaComments, FaGraduationCap, FaSignOutAlt, FaTrophy } from "react-icons/fa";
+import { getCurrentUser, getNotificationsForUser, logoutUser, markNotificationsRead } from "../services/storage";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: FaChartLine },
   { to: "/exam", label: "Mock Exams", icon: FaClipboardList },
   { to: "/reviewers", label: "Study Plan", icon: FaBookOpen },
   { to: "/weakness-drills", label: "Weakness Drills", icon: FaBrain },
-  { to: "/community", label: "Community & Rewards", icon: FaTrophy },
+  { to: "/community", label: "Community Forum", icon: FaComments },
+  { to: "/rewards", label: "Rewards & Badges", icon: FaTrophy },
   { to: "/settings", label: "Settings", icon: FaCog }
 ];
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const [user, setUser] = useState(() => getCurrentUser());
+  const [notifications, setNotifications] = useState(() => getNotificationsForUser(getCurrentUser()?.id));
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const displayName = user?.nickname || user?.name || user?.email || "Student";
   const initials = getInitials(displayName);
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
 
   useEffect(() => {
     function refreshUser(event) {
-      setUser(event.detail || getCurrentUser());
+      const nextUser = event.detail || getCurrentUser();
+      setUser(nextUser);
+      setNotifications(getNotificationsForUser(nextUser?.id));
     }
 
     window.addEventListener("currentActiveUserUpdated", refreshUser);
@@ -30,6 +36,35 @@ export default function DashboardLayout() {
       window.removeEventListener("storage", refreshUser);
     };
   }, []);
+
+  useEffect(() => {
+    function refreshNotifications() {
+      setNotifications(getNotificationsForUser(user?.id));
+    }
+
+    window.addEventListener("notificationsUpdated", refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+    return () => {
+      window.removeEventListener("notificationsUpdated", refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, [user?.id]);
+
+  function toggleNotifications() {
+    setNotificationsOpen((open) => {
+      const nextOpen = !open;
+      if (nextOpen && user?.id) {
+        setNotifications(markNotificationsRead(user.id));
+      }
+      return nextOpen;
+    });
+  }
+
+  function openNotification(notificationId) {
+    if (!user?.id) return;
+    setNotifications(markNotificationsRead(user.id, notificationId));
+    setNotificationsOpen(false);
+  }
 
   function logout() {
     logoutUser();
@@ -90,8 +125,61 @@ export default function DashboardLayout() {
           </div>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto p-5 md:p-8">
-        <Outlet />
+      <main className="flex-1 overflow-y-auto">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur md:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-blue-600">Student Workspace</p>
+              <p className="text-sm font-bold text-slate-500">Welcome back, {displayName}</p>
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={toggleNotifications}
+                className="relative grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-primary"
+                aria-label="Open notifications"
+              >
+                <FaBell />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1.5 text-[10px] font-black text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                  <div className="border-b border-slate-100 p-4">
+                    <p className="text-sm font-black text-slate-950">Notifications</p>
+                    <p className="text-xs font-semibold text-slate-500">Latest student updates and forum activity</p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.slice(0, 8).map((notification) => (
+                      <button
+                        type="button"
+                        key={notification.id}
+                        onClick={() => openNotification(notification.id)}
+                        className="block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className={`mt-1 h-2.5 w-2.5 rounded-full ${notification.isRead ? "bg-slate-200" : "bg-rose-500"}`} />
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{notification.message}</p>
+                            <p className="mt-1 text-xs font-semibold text-slate-400">{formatNotificationTime(notification.timestamp)}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {!notifications.length && <p className="p-4 text-sm font-semibold text-slate-500">No notifications yet.</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+        <div className="p-5 md:p-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
@@ -104,4 +192,14 @@ function getInitials(value) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function formatNotificationTime(timestamp) {
+  const diffMs = Date.now() - Number(timestamp || 0);
+  const minutes = Math.max(1, Math.round(diffMs / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }

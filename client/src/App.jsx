@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
-import CommunityRewards from "./features/community/CommunityRewards";
+import CommunityForumPage from "./features/community/CommunityForumPage";
+import RewardsBadgesPage from "./features/community/RewardsBadgesPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import CreateDrill from "./pages/CreateDrill";
 import DashboardPage from "./pages/DashboardPage";
@@ -32,7 +33,10 @@ export default function App() {
           <Route index element={<WeaknessDrillsPage />} />
         </Route>
         <Route path="/community" element={<DashboardLayout />}>
-          <Route index element={<CommunityRewards />} />
+          <Route index element={<CommunityForumPage />} />
+        </Route>
+        <Route path="/rewards" element={<DashboardLayout />}>
+          <Route index element={<RewardsBadgesPage />} />
         </Route>
         <Route path="/settings" element={<DashboardLayout />}>
           <Route index element={<SettingsPage />} />

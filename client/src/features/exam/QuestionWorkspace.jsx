@@ -23,7 +23,7 @@ export default function QuestionWorkspace({ section, question, questionIndex, re
       <div className="mt-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
         {getTypeLabel(type)} - {question.points || 1} pt{Number(question.points || 1) === 1 ? "" : "s"}
       </div>
-      <h2 className="mt-6 text-2xl font-black leading-snug text-slate-950">{question.stem}</h2>
+      <div className="mt-6 text-2xl font-black leading-snug text-slate-950" dangerouslySetInnerHTML={{ __html: question.stem }} />
 
       {isOptionsQuestion ? (
         <div className="mt-8 space-y-3">

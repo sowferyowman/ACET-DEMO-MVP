@@ -3,6 +3,8 @@ const SESSION_KEY = "exams_ph_current_user";
 const USER_ACCOUNTS_KEY = "userAccounts";
 const CURRENT_ACTIVE_USER_KEY = "currentActiveUser";
 const EXAMS_KEY = "global_exam_blueprints";
+const EXAMS_DATA_KEY = "examsData";
+const STUDY_PLAN_KEY = "studyPlanData";
 const REVIEWERS_KEY = "reviewersData";
 const DRILL_BANK_KEY = "drillBankData";
 const DASHBOARD_KEY = "acet_dashboard_data";
@@ -86,6 +88,228 @@ const defaultForumThreads = [
   }
 ];
 
+const studyPlanData = [
+  {
+    id: "study_week_01",
+    week: 1,
+    title: "Mathematics & Quantitative Reasoning",
+    objectives: [
+      "Rebuild algebraic fluency under time pressure.",
+      "Recognize function composition traps before performing long calculations.",
+      "Translate word problems into constraints, equations, and inequality checks.",
+      "Recover theorems for similarity, circles, quadrilaterals, and coordinate geometry."
+    ],
+    focusAreas: ["Advanced Algebra", "Complex Functions", "Word Problems", "Geometric Theorems"],
+    readingHtml: `
+      <article class="space-y-3">
+        <p><b>Core recovery target:</b> stop treating ACET quantitative items as isolated computations. Most difficult items combine algebraic structure with a verbal condition that removes one tempting shortcut.</p>
+        <p><b>Advanced Algebra:</b> Review factoring by grouping, rational expressions, nested radicals, and parameterized quadratics. When a question asks for a value that is invariant, test whether the expression can be rewritten around a hidden sum/product pair. For example, if roots are described indirectly, use Vieta before solving.</p>
+        <p><b>Complex Functions:</b> For compositions such as <i>f(g(x))</i>, identify the domain restriction before substituting. Logarithmic and radical functions usually hide the actual exam trap inside the boundary condition.</p>
+        <p><b>Word Problems:</b> Annotate quantities as <b>rate</b>, <b>stock</b>, or <b>change</b>. A two-line table is faster than mental tracking when a problem includes work rates, mixtures, discounts, or moving objects.</p>
+        <p><b>Geometry:</b> Build theorem recall around triggers: tangent means perpendicular radius; cyclic quadrilateral means opposite angles sum to 180; parallel lines invite similarity; median to hypotenuse creates equal radii.</p>
+      </article>`
+  },
+  {
+    id: "study_week_02",
+    week: 2,
+    title: "Logical Reasoning & Abstract Patterns",
+    objectives: [
+      "Decode double negatives and conditional statements without losing scope.",
+      "Separate valid Venn conclusions from emotionally plausible but unsupported statements.",
+      "Map spatial sequence rotations, reflections, and alternating transformations.",
+      "Build a notation system for fast elimination."
+    ],
+    focusAreas: ["Double-Negative Syllogisms", "Venn Diagram Fallacies", "Spatial Sequence Patterns"],
+    readingHtml: `
+      <article class="space-y-3">
+        <p><b>Core recovery target:</b> transform language into symbols before judging truth. The hardest reasoning questions are written to make the conclusion sound familiar while quietly changing quantity, direction, or exception scope.</p>
+        <p><b>Syllogisms with double negatives:</b> Replace phrases like <i>not all are not</i> with a minimum-existence claim. If "not all artists are not scientists," then at least one artist is a scientist. Do not convert it into "all artists are scientists."</p>
+        <p><b>Venn fallacies:</b> Universal statements allow containment; particular statements only place at least one element. Never assume the overlap is empty unless the premise explicitly says "no."</p>
+        <p><b>Spatial sequences:</b> Track three channels independently: position, orientation, and shading. Many items alternate transformations, e.g. rotate 90 degrees on odd steps but mirror on even steps.</p>
+        <p><b>Practice protocol:</b> Use symbols first, answer second. Under severe time pressure, eliminate any option that asserts a stronger conclusion than the premises justify.</p>
+      </article>`
+  },
+  {
+    id: "study_week_03",
+    week: 3,
+    title: "English Proficiency & Critical Reading",
+    objectives: [
+      "Read dense passages for argument structure instead of line-by-line memory.",
+      "Identify grammar errors involving modifier placement, agreement, tense, and parallelism.",
+      "Correct syntax without changing authorial meaning.",
+      "Solve analogies by relationship type, not surface vocabulary."
+    ],
+    focusAreas: ["Timed Reading Comprehension", "Error Identification", "Syntax Correction", "Analogy Mapping"],
+    readingHtml: `
+      <article class="space-y-3">
+        <p><b>Core recovery target:</b> answer from function. ACET-style English items often punish readers who remember a phrase but miss why the phrase appears.</p>
+        <p><b>Timed reading:</b> First pass: mark thesis, contrast words, and conclusion. Second pass: answer evidence questions by returning to the exact paragraph role. If a choice is true but not used by the author, it is still wrong.</p>
+        <p><b>Error identification:</b> Check subject-verb agreement after removing interrupting phrases. For modifiers, ask whether the nearest noun can logically perform the described action.</p>
+        <p><b>Syntax correction:</b> Prefer the option that preserves meaning while improving concision, parallelism, and reference clarity. Beware choices that sound polished but shift tense or agency.</p>
+        <p><b>Analogies:</b> Name the relation in a sentence: "A scalpel is used by a surgeon for precise cutting." Then test each option against the same relation, not against word familiarity.</p>
+      </article>`
+  },
+  {
+    id: "study_week_04",
+    week: 4,
+    title: "General Knowledge & High-Speed Performance Drills",
+    objectives: [
+      "Consolidate high-frequency facts through context, not memorized lists.",
+      "Practice mathematical shortcuts that preserve accuracy.",
+      "Review current socio-economic events through cause-effect chains.",
+      "Build a pacing system for skipping, returning, and protecting easy points."
+    ],
+    focusAreas: ["Mathematical Shortcuts", "Current Socio-Economic Events", "High-Pressure Pacing"],
+    readingHtml: `
+      <article class="space-y-3">
+        <p><b>Core recovery target:</b> convert preparation into execution. The final week should reduce hesitation, not add new anxiety.</p>
+        <p><b>Math shortcuts:</b> Use estimation to reject impossible answers before exact work. For percentages, convert chained changes into multipliers. For ratios, scale to the least common base.</p>
+        <p><b>General knowledge:</b> Study events as systems: policy, affected sector, consequence, and controversy. For socio-economic questions, understand inflation, unemployment, migration, energy, education, and governance as connected issues.</p>
+        <p><b>Pacing:</b> Use a three-pass model. Pass 1 captures direct wins. Pass 2 handles medium problems with visible structure. Pass 3 is for time-intensive traps. Marking and moving is a skill, not a surrender.</p>
+        <p><b>Final drill:</b> Complete mixed sets with a visible timer, then review not only wrong answers but also slow correct answers. Slow correctness is still a risk in a grueling entrance test.</p>
+      </article>`
+  }
+];
+
+const examBlueprintSeed = [
+  {
+    id: "exam_acet_001",
+    title: "ACET Mock Exam 1: Advanced Numerical Sprint",
+    duration: 50,
+    questions: [
+      ["q_math_001", "Mathematics", "Advanced Algebra", "Composite Functions", "<p><b>Situation:</b> A scholarship committee models stress performance by composing two functions, <i>f(x)=3x^2-5x</i> and <i>g(x)=log<sub>2</sub>(x)</i>. If a candidate's raw pace index is constrained to <b>x=8</b>, evaluate <i>f(g(x))</i> and interpret it as the adjustment parameter.</p>", ["6", "12", "18", "24"], 1],
+      ["q_math_002", "Mathematics", "Geometric Theorems", "Cyclic Quadrilaterals", "<p>A quadrilateral is inscribed in a circle. One angle is written as <b>3y+14</b> degrees and the opposite angle as <b>5y-2</b> degrees. What is the value of the smaller of the two opposite angles?</p>", ["73°", "86°", "94°", "107°"], 1],
+      ["q_logic_001", "Logical Reasoning", "Syllogisms", "Double Negatives", "<p><b>Premises:</b> Not all diligent students are not artists. Every artist in the review hall is either a debater or a musician. No musician failed the diagnostic. Which conclusion must follow?</p>", ["All diligent students passed the diagnostic.", "At least one diligent student may be a debater or a musician.", "No debater failed the diagnostic.", "Every artist is diligent."], 1],
+      ["q_eng_001", "English", "Syntax Correction", "Dangling Modifiers", "<p><b>Error identification:</b> <i>Walking through the old archive, the manuscripts seemed to whisper the history of the city to Mara.</i> Which revision best repairs the modifier?</p>", ["Walking through the old archive, Mara felt the manuscripts seemed to whisper the history of the city.", "The manuscripts walking through the old archive seemed to whisper history.", "Mara, the manuscripts walking through the old archive, heard history.", "Walking through the old archive seemed the manuscripts to whisper."], 0],
+      ["q_gk_001", "General Knowledge", "Socio-Economic Analysis", "Inflation and Purchasing Power", "<p>A news brief states that nominal wages rose by 5% while consumer prices rose by 8% in the same period. Which interpretation is most accurate for workers whose consumption basket matches the index?</p>", ["Real purchasing power increased by about 3%.", "Real purchasing power declined despite higher nominal pay.", "Inflation is irrelevant if wages rise.", "Nominal wage growth always means improved welfare."], 1]
+    ]
+  },
+  {
+    id: "exam_acet_002",
+    title: "ACET Simulation 2: Logic, Language, and Quantitative Endurance",
+    duration: 50,
+    questions: [
+      ["q_math_006", "Mathematics", "Word Problems", "Work Rate Systems", "<p>Three printers prepare test booklets. Printer A can finish alone in 6 hours, B in 9 hours, and C joins only after the first hour. If A and B start together, how many additional hours are needed after C joins if C alone would take 12 hours?</p>", ["2.0 hours", "2.4 hours", "3.0 hours", "3.6 hours"], 1],
+      ["q_logic_006", "Logical Reasoning", "Venn Diagram Fallacies", "Unsupported Conversion", "<p><b>Premises:</b> All campus journalists are writers. Some writers are athletes. No athlete in the data set is a chess finalist. Which statement is logically secure?</p>", ["Some journalists are athletes.", "No campus journalist is a chess finalist.", "Some writers are not chess finalists.", "All writers are campus journalists."], 2],
+      ["q_eng_006", "English", "Reading Inference", "Authorial Purpose", "<p><b>Passage excerpt:</b> The author praises urban gardens not merely because they beautify vacant spaces, but because they expose residents to the hidden labor behind food systems. What is the author's likely purpose?</p>", ["To argue that gardens should replace all supermarkets", "To connect aesthetics with civic awareness", "To prove rural farms are obsolete", "To criticize residents for poor taste"], 1],
+      ["q_math_007", "Mathematics", "Functions", "Piecewise Boundary Evaluation", "<p>For <i>h(x)=2x+1</i> when x&lt;3 and <i>h(x)=x^2-4</i> when x≥3, what is <i>h(h(2))</i>?</p>", ["5", "9", "21", "32"], 2],
+      ["q_gk_006", "General Knowledge", "Governance", "Public Accountability", "<p>A local government publishes project costs, bidding documents, and completion reports online. Which democratic principle is most directly strengthened?</p>", ["Subsidiarity", "Transparency", "Isolationism", "Judicial restraint"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_003",
+    title: "ACET Simulation 3: Abstract Pattern and Reading Compression",
+    duration: 48,
+    questions: [
+      ["q_logic_011", "Logical Reasoning", "Spatial Sequence Patterns", "Rotation Reflection Alternation", "<p>A figure rotates 90° clockwise on odd moves and reflects horizontally on even moves. Starting from an arrow pointing up with its shaded half on the left, what is its orientation after four moves?</p>", ["Arrow up, shaded left", "Arrow right, shaded right", "Arrow down, shaded left", "Arrow left, shaded right"], 0],
+      ["q_math_011", "Mathematics", "Advanced Algebra", "Rational Expression Restrictions", "<p>Solve for the excluded values in the expression <b>(x²-9)/(x²-x-6)</b> before simplification. Which set must be removed from the domain?</p>", ["{3}", "{-2, 3}", "{-3, 2}", "{-3, -2, 3}"], 1],
+      ["q_eng_011", "English", "Analogy Mapping", "Function Relationship", "<p><b>Analogy:</b> Compass : navigation :: rubric : _____. Choose the option preserving the same functional relationship.</p>", ["assessment", "essay", "teacher", "classroom"], 0],
+      ["q_eng_012", "English", "Error Identification", "Pronoun Reference", "<p>In the sentence <i>When Carla placed the notebook beside the laptop, it was already damaged</i>, what is the main weakness?</p>", ["Faulty tense sequence", "Ambiguous pronoun reference", "Subject-verb disagreement", "Incorrect comparison"], 1],
+      ["q_gk_011", "General Knowledge", "Economics", "Opportunity Cost", "<p>A student chooses a free review seminar over a paid tutoring shift. The seminar has no fee. What is the opportunity cost?</p>", ["Zero because the seminar is free", "The value of the paid tutoring shift forgone", "The total cost of all future seminars", "Only transportation expenses"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_004",
+    title: "ACET Simulation 4: Geometry, Evidence, and Civic Context",
+    duration: 52,
+    questions: [
+      ["q_math_016", "Mathematics", "Geometric Theorems", "Similarity Ratios", "<p>Two similar triangles have corresponding sides 6 cm and 15 cm. If the smaller triangle has area 28 cm², what is the area of the larger triangle?</p>", ["70 cm²", "112 cm²", "175 cm²", "280 cm²"], 2],
+      ["q_eng_016", "English", "Critical Reading", "Evidence Selection", "<p>A passage argues that digital archives democratize access but may flatten cultural context. Which evidence best supports the second half of the claim?</p>", ["More people can download documents.", "Metadata often omits ritual, location, and community memory.", "Servers require electricity.", "Students prefer searchable PDFs."], 1],
+      ["q_logic_016", "Logical Reasoning", "Conditional Logic", "Contrapositive Trap", "<p>If a participant submits late, then the application is flagged. Mara's application was not flagged. What follows?</p>", ["Mara submitted late.", "Mara did not submit late.", "All unflagged applications are excellent.", "Flagged applications are always late."], 1],
+      ["q_math_017", "Mathematics", "Word Problems", "Mixture Concentration", "<p>A 30% solution is mixed with 200 mL of a 60% solution to produce 500 mL of final solution. What is the final concentration?</p>", ["36%", "42%", "48%", "54%"], 1],
+      ["q_gk_016", "General Knowledge", "Philippine Society", "Migration Effects", "<p>Which statement best captures a common socio-economic effect of overseas remittances?</p>", ["They may increase household consumption while creating dependency risks.", "They eliminate all unemployment.", "They directly lower every commodity price.", "They make taxation unnecessary."], 0]
+    ]
+  },
+  {
+    id: "exam_acet_005",
+    title: "ACET Simulation 5: High-Pressure Mixed Reasoning",
+    duration: 47,
+    questions: [
+      ["q_math_021", "Mathematics", "Functions", "Inverse Function Interpretation", "<p>A scoring curve is modeled by <i>f(x)=4x-7</i>. If the adjusted score is 65, what raw score x produced it?</p>", ["14", "16", "18", "20"], 2],
+      ["q_logic_021", "Logical Reasoning", "Syllogisms", "Existential Conclusions", "<p>Some volunteers are tutors. All tutors completed orientation. Which conclusion follows?</p>", ["All volunteers completed orientation.", "Some volunteers completed orientation.", "No non-tutor completed orientation.", "All oriented people are tutors."], 1],
+      ["q_eng_021", "English", "Syntax Correction", "Parallel Structure", "<p>Choose the best revision: <i>The program values discipline, curiosity, and students who serve others.</i></p>", ["discipline, curiosity, and service", "discipline, being curious, and students serving", "disciplined, curiosity, and service", "discipline, curious students, and serving"], 0],
+      ["q_math_022", "Mathematics", "Advanced Algebra", "Quadratic Parameter", "<p>For what value of k will <i>x²-10x+k</i> have exactly one real root?</p>", ["10", "20", "25", "50"], 2],
+      ["q_gk_021", "General Knowledge", "Media Literacy", "Source Reliability", "<p>Which source is strongest for verifying a current inflation figure?</p>", ["Anonymous comment thread", "Official statistics agency release", "A meme with a graph", "A decade-old textbook"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_006",
+    title: "ACET Simulation 6: Quantitative and Verbal Trapdoors",
+    duration: 50,
+    questions: [
+      ["q_math_026", "Mathematics", "Word Problems", "Discount Compounding", "<p>A jacket is discounted 20% and then another 15% on the reduced price. What single discount is equivalent?</p>", ["32%", "35%", "38%", "40%"], 0],
+      ["q_eng_026", "English", "Reading Comprehension", "Tone Under Constraint", "<p>An essay calls a policy <i>well-intentioned but administratively naive</i>. What is the tone?</p>", ["Unqualified praise", "Measured criticism", "Indifference", "Celebratory certainty"], 1],
+      ["q_logic_026", "Logical Reasoning", "Venn Diagram Fallacies", "Some-versus-All", "<p>All scholars are readers. Some readers are poets. Which diagram must be possible but not required?</p>", ["Scholar circle entirely outside readers", "Poet circle overlapping readers", "Reader circle inside scholars", "No overlap between readers and poets"], 1],
+      ["q_math_027", "Mathematics", "Geometric Theorems", "Circle Tangent", "<p>A radius to a point of tangency is 9 cm. A tangent segment from an external point is 12 cm. How far is the external point from the circle center?</p>", ["15 cm", "18 cm", "21 cm", "24 cm"], 0],
+      ["q_eng_027", "English", "Analogy Mapping", "Cause-Effect Relationship", "<p>Drought : crop failure :: misinformation : _____. Choose the best effect relationship.</p>", ["public confusion", "library", "weather report", "harvest"], 0]
+    ]
+  },
+  {
+    id: "exam_acet_007",
+    title: "ACET Simulation 7: Analytical Reading and Algebraic Precision",
+    duration: 49,
+    questions: [
+      ["q_eng_031", "English", "Critical Reading", "Assumption Detection", "<p>An editorial argues that extending library hours will improve exam scores because students will study more. What assumption is required?</p>", ["Students will use the extra hours for study.", "Libraries should sell food.", "Exam scores never change.", "Students dislike quiet spaces."], 0],
+      ["q_math_031", "Mathematics", "Advanced Algebra", "Exponential Equations", "<p>Solve <b>2<sup>x+1</sup> = 32</b>. What is x?</p>", ["3", "4", "5", "6"], 1],
+      ["q_logic_031", "Logical Reasoning", "Conditional Logic", "Necessary Condition", "<p>Only students with clearance may enter the archive. Joel entered the archive. What follows?</p>", ["Joel has clearance.", "Joel is a librarian.", "Everyone with clearance entered.", "No one entered."], 0],
+      ["q_math_032", "Mathematics", "Functions", "Domain Restriction", "<p>For <i>g(x)=sqrt(2x-6)</i>, which interval gives the domain?</p>", ["x&lt;3", "x≤3", "x≥3", "all real numbers"], 2],
+      ["q_gk_031", "General Knowledge", "Civics", "Separation of Powers", "<p>Judicial review primarily refers to the power to do what?</p>", ["Create taxes", "Declare acts unconstitutional", "Command the military", "Conduct elections"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_008",
+    title: "ACET Simulation 8: Pattern Sprint and Grammar Accuracy",
+    duration: 46,
+    questions: [
+      ["q_logic_036", "Logical Reasoning", "Abstract Patterns", "Alternating Arithmetic", "<p>Find the next term: 4, 9, 7, 14, 12, 19, 17, __. The pattern alternates operations.</p>", ["21", "22", "24", "26"], 2],
+      ["q_eng_036", "English", "Error Identification", "Subject Verb Agreement", "<p>Choose the corrected verb: <i>The list of urgent review topics ___ on the coordinator's desk.</i></p>", ["are", "were", "is", "have been"], 2],
+      ["q_math_036", "Mathematics", "Word Problems", "Ratio Scaling", "<p>A class ratio of STEM to HUMSS students is 7:5. If there are 96 students, how many are HUMSS?</p>", ["35", "40", "48", "56"], 1],
+      ["q_eng_037", "English", "Syntax Correction", "Conciseness", "<p>Best revision: <i>Due to the fact that the schedule was compressed, reviewers had to prioritize.</i></p>", ["Because the schedule was compressed, reviewers had to prioritize.", "Due to compression of schedule reviewers prioritizing.", "The schedule was compressed due to the fact.", "Reviewers had to prioritize in a compressed way."], 0],
+      ["q_gk_036", "General Knowledge", "Economics", "Supply Shock", "<p>A typhoon destroys crops. If demand stays similar, what is the likely short-run market effect?</p>", ["Supply rises and price falls", "Supply falls and price rises", "Demand disappears", "Price is legally fixed everywhere"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_009",
+    title: "ACET Simulation 9: Endurance Set for Weakness Isolation",
+    duration: 53,
+    questions: [
+      ["q_math_041", "Mathematics", "Geometric Theorems", "Coordinate Distance", "<p>In the coordinate plane, points A(-2,5) and B(4,-3) define a segment. What is its length?</p>", ["8", "10", "12", "14"], 1],
+      ["q_logic_041", "Logical Reasoning", "Syllogisms", "Quantifier Scope", "<p>Not every applicant who was not interviewed was rejected. What does this imply?</p>", ["At least one non-interviewed applicant was not rejected.", "All non-interviewed applicants were accepted.", "No rejected applicant was interviewed.", "Every applicant was interviewed."], 0],
+      ["q_eng_041", "English", "Reading Inference", "Main Claim", "<p>A passage says technology expands access but intensifies distraction. What is the most balanced main claim?</p>", ["Technology is purely harmful.", "Access and attention costs must be weighed together.", "Distraction is imaginary.", "Only old technology helps students."], 1],
+      ["q_math_042", "Mathematics", "Advanced Algebra", "Inequality Reasoning", "<p>If <i>3x-7 &lt; 11</i> and x is an integer greater than 1, what is the greatest possible x?</p>", ["4", "5", "6", "7"], 1],
+      ["q_gk_041", "General Knowledge", "Current Events Reasoning", "Energy Policy Tradeoffs", "<p>A country shifts toward renewable energy but faces intermittency issues. Which policy response is most technically relevant?</p>", ["Ignore grid storage", "Invest in storage and grid modernization", "Ban all electricity use", "Rely only on slogans"], 1]
+    ]
+  },
+  {
+    id: "exam_acet_010",
+    title: "ACET Simulation 10: Final Comprehensive Pressure Test",
+    duration: 55,
+    questions: [
+      ["q_math_046", "Mathematics", "Functions", "Composite Logarithmic Functions", "<p><b>Final pressure item:</b> Let <i>f(x)=x²+2x</i> and <i>g(x)=log<sub>3</sub>(x)</i>. If x=27, what is <i>f(g(x))</i>?</p>", ["9", "12", "15", "18"], 2],
+      ["q_logic_046", "Logical Reasoning", "Spatial Sequence Patterns", "Layered Transformation", "<p>A shaded square moves one corner clockwise each step while its internal diagonal flips every second step. After five steps, where is the square and what happened to the diagonal?</p>", ["Original corner, unchanged", "Next clockwise corner, flipped", "Opposite corner, unchanged", "Previous corner, flipped"], 1],
+      ["q_eng_046", "English", "Analogy Mapping", "Degree Relationship", "<p>Whisper : shout :: drizzle : _____. Choose the pair matching intensity difference.</p>", ["storm", "cloud", "umbrella", "puddle"], 0],
+      ["q_math_047", "Mathematics", "Word Problems", "Pacing Optimization", "<p>A student answers easy items at 45 seconds each and hard items at 150 seconds each. In a 20-minute block with 12 easy items, how many hard items can still be attempted?</p>", ["4", "5", "6", "7"], 0],
+      ["q_gk_046", "General Knowledge", "Socio-Economic Analysis", "Policy Tradeoffs", "<p>A fare subsidy helps commuters but strains the public budget. Which analysis is most complete?</p>", ["It has only benefits.", "It has only costs.", "It requires weighing equity gains against fiscal sustainability.", "It cannot affect behavior."], 2]
+    ]
+  }
+];
+
+const examsData = examBlueprintSeed.map((exam) => ({
+  id: exam.id,
+  title: exam.title,
+  duration: exam.duration,
+  points: 100,
+  questions: exam.questions.map(([id, subject, subCategory, weaknessTag, questionText, options, correctAnswer]) => ({
+    id,
+    questionText,
+    options,
+    correctAnswer,
+    subject,
+    subCategory,
+    weaknessTag
+  }))
+}));
+
 function readJson(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -116,7 +340,10 @@ export function initializeLocalStorage() {
     writeJson(USERS_KEY, mergedUsers);
   }
 
-  if (!localStorage.getItem(EXAMS_KEY)) writeJson(EXAMS_KEY, []);
+  if (!localStorage.getItem(EXAMS_DATA_KEY)) writeJson(EXAMS_DATA_KEY, examsData);
+  if (!localStorage.getItem(STUDY_PLAN_KEY)) writeJson(STUDY_PLAN_KEY, studyPlanData);
+  if (!localStorage.getItem(EXAMS_KEY)) writeJson(EXAMS_KEY, transformExamsDataToBlueprints(readJson(EXAMS_DATA_KEY, examsData)));
+  if (!readJson(EXAMS_KEY, []).length) writeJson(EXAMS_KEY, transformExamsDataToBlueprints(readJson(EXAMS_DATA_KEY, examsData)));
   if (!localStorage.getItem(REVIEWERS_KEY)) writeJson(REVIEWERS_KEY, []);
   if (!localStorage.getItem(DRILL_BANK_KEY)) writeJson(DRILL_BANK_KEY, []);
   if (!localStorage.getItem(DASHBOARD_KEY)) writeJson(DASHBOARD_KEY, {});
@@ -144,6 +371,16 @@ export function initializeLocalStorage() {
 export function getUsers() {
   initializeLocalStorage();
   return readJson(USERS_KEY, defaultUsers);
+}
+
+export function getExamsData() {
+  initializeLocalStorage();
+  return readJson(EXAMS_DATA_KEY, examsData);
+}
+
+export function getStudyPlanData() {
+  initializeLocalStorage();
+  return readJson(STUDY_PLAN_KEY, studyPlanData);
 }
 
 export function getUserAccounts() {
@@ -343,6 +580,59 @@ function normalizeReactions(reactions = {}) {
   }, {});
 }
 
+function transformExamsDataToBlueprints(examRecords) {
+  return examRecords.map((exam) => {
+    const grouped = exam.questions.reduce((sections, question) => {
+      const subject = question.subject || "General Knowledge";
+      const existing = sections.find((section) => section.subjectTitle === subject);
+      const target = existing || {
+        subjectTitle: subject,
+        allottedTimeSec: Math.round((Number(exam.duration || 50) * 60) / 4),
+        questions: []
+      };
+      target.questions.push({
+        id: question.id,
+        type: "multiple_choice",
+        stem: question.questionText,
+        choiceOpts: question.options,
+        answerIdx: question.correctAnswer,
+        correctAnswers: [],
+        correctText: "",
+        diagnosticSubcategory: question.subCategory,
+        diagnosticSkillTag: question.weaknessTag,
+        category: question.subject,
+        subCategory: question.subCategory,
+        weaknessTag: question.weaknessTag,
+        points: Math.max(1, Math.round(Number(exam.points || 100) / Math.max(1, exam.questions.length)))
+      });
+      return existing ? sections : [...sections, target];
+    }, []);
+
+    return {
+      id: exam.id,
+      title: exam.title,
+      duration: exam.duration,
+      points: exam.points,
+      sections: grouped,
+      createdAt: new Date().toISOString(),
+      status: "published",
+      source: "examsData"
+    };
+  });
+}
+
+function getStudyPlanCards() {
+  return readJson(STUDY_PLAN_KEY, studyPlanData).map((week) => ({
+    day: `Week ${week.week}`,
+    title: week.title,
+    detail: `${week.focusAreas.join(" • ")}. Objectives: ${week.objectives.join(" ")}`,
+    detailHtml: week.readingHtml,
+    status: week.week === 1 ? "today" : "upcoming",
+    objectives: week.objectives,
+    focusAreas: week.focusAreas
+  }));
+}
+
 export function getExamBlueprints() {
   initializeLocalStorage();
   return readJson(EXAMS_KEY, []);
@@ -446,7 +736,7 @@ export function createEmptyDashboard(email) {
     subjects: [],
     exams: [],
     attempts: [],
-    studyPlan: [],
+    studyPlan: getStudyPlanCards(),
     rewards: [],
     aiInsight: null
   };
@@ -486,12 +776,16 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
     color: subject.pct >= 90 ? "emerald" : subject.pct >= 80 ? "blue" : subject.pct >= 70 ? "amber" : "rose"
   }));
 
-  const studyPlan = results.weaknesses.map((weakness, index) => ({
-    day: ["Monday", "Wednesday", "Friday"][index % 3],
-    title: `${weakness.title}: Targeted Review`,
-    detail: `Focus on ${weakness.topicFocus}. This was generated from your latest exam attempt.`,
-    status: index === 0 ? "priority" : "upcoming"
-  }));
+  const studyPlan = getStudyPlanCards().map((item, index) => {
+    const weakness = results.weaknesses[index % Math.max(1, results.weaknesses.length)];
+    if (!weakness) return item;
+    return {
+      ...item,
+      title: `${item.title}: ${weakness.title} Recovery`,
+      detail: `Focus on ${weakness.topicFocus}. ${item.detail}`,
+      status: index === 0 ? "today" : item.status
+    };
+  });
 
   const nextDashboard = {
     ...currentDashboard,

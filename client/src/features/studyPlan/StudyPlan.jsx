@@ -36,6 +36,18 @@ export default function StudyPlan({ items }) {
             <span className="text-xs font-black uppercase tracking-wider text-blue-600">{item.day}</span>
             <h3 className="mt-2 text-xl font-black text-slate-950">{item.title}</h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.detail}</p>
+            {item.detailHtml && (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700" dangerouslySetInnerHTML={{ __html: item.detailHtml }} />
+            )}
+            {!!item.focusAreas?.length && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {item.focusAreas.map((focus) => (
+                  <span key={focus} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
+                    {focus}
+                  </span>
+                ))}
+              </div>
+            )}
           </motion.article>
         ))}
       </div>

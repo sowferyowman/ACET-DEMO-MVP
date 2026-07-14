@@ -32,12 +32,13 @@ export default function DashboardPage() {
 
   if (!data || !data.hasDashboardData) {
     return (
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl space-y-10">
         <div className="glass-card p-8">
           <p className="text-sm font-bold uppercase tracking-wider text-slate-500">No dashboard records yet</p>
           <h2 className="mt-2 text-2xl font-black text-slate-950">Complete an exam attempt to generate your dashboard.</h2>
-          <p className="mt-2 text-sm text-slate-500">The app checked SQLite and did not find enough student data to render charts or metrics.</p>
+          <p className="mt-2 text-sm text-slate-500">Your premium 4-week preparation plan is already loaded below while performance charts wait for your first scored mock.</p>
         </div>
+        <StudyPlan items={data?.studyPlan || []} />
       </div>
     );
   }
