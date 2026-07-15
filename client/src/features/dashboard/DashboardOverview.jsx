@@ -1,21 +1,109 @@
-import { FaDownload } from "react-icons/fa";
 import ProgressChart from "./ProgressChart";
 import StatCard from "./StatCard";
 import SubjectMastery from "./SubjectMastery";
 
-export default function DashboardOverview({ data }) {
+export default function DashboardOverview({ 
+  data, 
+  notifications, 
+  notificationsOpen, 
+  unreadCount, 
+  toggleNotifications, 
+  openNotification, 
+  formatNotificationTime 
+}) {
   const examCount = data.exams.length;
 
   return (
     <section id="dashboard" className="space-y-6">
-      <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-950">ACET Performance Overview</h2>
-          <p className="mt-1 text-sm text-slate-500">Metrics based on {examCount} completed mock examination{examCount === 1 ? "" : "s"}.</p>
+          <h2 className="text-2xl font-black text-white">ACET Performance Overview</h2>
+          <p className="mt-1 text-sm text-white/60">Metrics based on {examCount} completed mock examination{examCount === 1 ? "" : "s"}.</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50">
-          <FaDownload /> Export Report
-        </button>
+        
+        {/* Notification Button - Aligned with the header */}
+        <div className="relative flex-shrink-0">
+          <button 
+            type="button"
+            onClick={toggleNotifications}
+            className="group relative cursor-pointer focus-visible:outline-none"
+            aria-label={notificationsOpen ? "Close notifications" : "Open notifications"}
+            aria-expanded={notificationsOpen}
+          >
+            {unreadCount > 0 && (
+              <div className="absolute -right-1 -top-1 z-10">
+                <div className="flex h-5 w-5 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-bl from-slate-900 via-slate-950 to-black p-[1px] shadow-lg shadow-blue-500/10">
+              <div className="relative flex items-center gap-3 rounded-xl bg-slate-950 px-4 py-2 transition-all duration-300 group-hover:bg-slate-950/50">
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 transition-transform duration-300 group-hover:scale-110">
+                  <svg stroke="currentColor" viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
+                    <path
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    ></path>
+                  </svg>
+                  <div className="absolute inset-0 rounded-lg bg-blue-500/40 blur-xs transition-all duration-300 group-hover:blur-sm"></div>
+                </div>
+
+                <div className="flex flex-col items-start">
+                  <span className="text-xs font-semibold text-white">Updates</span>
+                  <span className="text-[9px] font-medium text-blue-400/80">Check updates</span>
+                </div>
+
+                <div className="ml-auto flex items-center gap-0.5">
+                  <div className="h-1 w-1 rounded-full bg-blue-500 transition-transform duration-300 group-hover:scale-150"></div>
+                  <div className="h-1 w-1 rounded-full bg-blue-500/50 transition-transform duration-300 group-hover:scale-150 group-hover:delay-100"></div>
+                  <div className="h-1 w-1 rounded-full bg-blue-500/30 transition-transform duration-300 group-hover:scale-150 group-hover:delay-200"></div>
+                </div>
+              </div>
+
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 opacity-10 transition-opacity duration-300 group-hover:opacity-30"></div>
+            </div>
+          </button>
+
+          {/* Notifications Dropdown Card */}
+          {notificationsOpen && (
+            <div className="notification-dropdown">
+              <div className="border-b border-slate-100 p-4 bg-slate-50/80">
+                <p className="text-sm font-black text-slate-950">Notifications</p>
+                <p className="text-[11px] font-semibold text-slate-500 mt-0.5">Latest student updates & forum activity</p>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.slice(0, 8).map((notification) => (
+                  <button
+                    type="button"
+                    key={notification.id}
+                    onClick={() => openNotification(notification.id)}
+                    className="block w-full border-b border-slate-100 px-4 py-3.5 text-left transition hover:bg-slate-50"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.isRead ? "bg-slate-200" : "bg-blue-600"}`} />
+                      <div className="min-w-0">
+                        <p className="break-words text-xs font-bold text-slate-800 leading-snug">{notification.message}</p>
+                        <p className="mt-1 text-[10px] font-bold text-slate-400">{formatNotificationTime(notification.timestamp)}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                {!notifications.length && (
+                  <div className="p-6 text-center text-xs font-semibold text-slate-500">
+                    No notifications yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
@@ -25,10 +113,21 @@ export default function DashboardOverview({ data }) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="glass-card p-6 lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-800">Exam Progression Trajectory</h3>
-          <div className="mt-4 h-72">
-            <ProgressChart points={data.progression} />
+        <div className="lg:col-span-2">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl shadow-black/10">
+            <h3 className="text-lg font-bold text-white">Exam Progression Trajectory</h3>
+            {data.progression.length ? (
+              <div className="mt-4 h-72">
+                <ProgressChart points={data.progression} />
+              </div>
+            ) : (
+              <div className="mt-4 grid h-72 place-items-center rounded-2xl border border-dashed border-white/10 bg-white/5 text-center">
+                <div>
+                  <p className="text-sm font-black text-white/70">No exam trajectory yet</p>
+                  <p className="mt-1 text-xs font-semibold text-white/40">Complete a mock exam to generate score movement.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <SubjectMastery subjects={data.subjects} />

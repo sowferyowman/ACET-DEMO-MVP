@@ -13,12 +13,16 @@ import { Line } from "react-chartjs-2";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 export default function ProgressChart({ points }) {
+  const scores = points.map((point) => Number(point.score || 0));
+  const minScore = scores.length ? Math.max(0, Math.min(...scores) - 10) : 0;
+  const maxScore = scores.length ? Math.min(100, Math.max(100, Math.max(...scores) + 10)) : 100;
+
   const chartData = {
     labels: points.map((point) => point.label),
     datasets: [
       {
         label: "Score",
-        data: points.map((point) => point.score),
+        data: scores,
         borderColor: "#2563eb",
         backgroundColor: "rgba(37, 99, 235, 0.12)",
         fill: true,
@@ -34,10 +38,29 @@ export default function ProgressChart({ points }) {
       data={chartData}
       options={{
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => {
+                const point = points[items[0]?.dataIndex];
+                return point?.examTitle || point?.label || "";
+              },
+              label: (item) => `Score: ${item.raw}%`
+            }
+          }
+        },
         scales: {
-          y: { min: 40, max: 100, ticks: { callback: (value) => `${value}%` } },
-          x: { grid: { display: false } }
+          y: { min: minScore, max: maxScore, ticks: { callback: (value) => `${value}%` } },
+          x: {
+            grid: { display: false },
+            ticks: {
+              callback(value) {
+                const label = this.getLabelForValue(value);
+                return label.length > 18 ? `${label.slice(0, 18)}...` : label;
+              }
+            }
+          }
         }
       }}
     />

@@ -1,27 +1,53 @@
 const bars = {
-  emerald: "bg-emerald-500 text-emerald-600",
-  blue: "bg-blue-500 text-blue-600",
-  amber: "bg-amber-400 text-amber-600",
-  rose: "bg-rose-500 text-rose-600"
+  emerald: "bg-emerald-500 text-emerald-500 dark:text-emerald-400 dark:bg-emerald-500",
+  blue: "bg-blue-500 text-blue-600 dark:text-blue-400 dark:bg-blue-500",
+  amber: "bg-amber-400 text-amber-600 dark:text-amber-400 dark:bg-amber-400",
+  rose: "bg-rose-500 text-rose-600 dark:text-rose-400 dark:bg-rose-500"
 };
 
 export default function SubjectMastery({ subjects }) {
   return (
-    <div className="glass-card p-6">
-      <h3 className="mb-6 text-lg font-bold text-slate-800">Aggregate Subject Mastery</h3>
-      <div className="space-y-6">
-        {subjects.map((subject) => (
-          <div key={subject.name}>
-            <div className="mb-1 flex items-end justify-between">
-              <span className="text-sm font-bold text-slate-700">{subject.name}</span>
-              <span className={`text-sm font-black ${bars[subject.color]?.split(" ")[1]}`}>{subject.mastery}%</span>
+    /* We changed glass-card to support dynamic dark background/borders and custom shadows */
+    <div className="glass-card p-6 bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl shadow-sm transition-all duration-300">
+      <h3 className="mb-6 text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">
+        Aggregate Subject Mastery
+      </h3>
+      
+      {subjects.length ? (
+        <div className="space-y-6">
+          {subjects.map((subject) => (
+            /* Hover wrapper: scales row up, brightens text, and dims other rows subtly */
+            <div 
+              key={subject.name} 
+              className="group/row transition-all duration-300 hover:scale-[1.01] hover:translate-x-1"
+            >
+              <div className="mb-1.5 flex items-end justify-between">
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors duration-300 group-hover/row:text-white">
+                  {subject.name}
+                </span>
+                <span className={`text-sm font-black transition-colors duration-300 ${bars[subject.color]?.split(" ")[1] || "text-slate-600 dark:text-slate-400"}`}>
+                  {subject.mastery}%
+                </span>
+              </div>
+              
+              {/* Progress Track: transparent slate track on dark, light gray on light */}
+              <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 p-[1.5px] transition-all duration-300">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_12px_rgba(59,130,246,0.25)] ${bars[subject.color]?.split(" ")[0] || "bg-slate-500"}`} 
+                  style={{ width: `${subject.mastery}%` }} 
+                />
+              </div>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
-              <div className={`h-full rounded-full ${bars[subject.color]?.split(" ")[0]}`} style={{ width: `${subject.mastery}%` }} />
-            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-center">
+          <div>
+            <p className="text-sm font-black text-slate-700 dark:text-slate-200">No mastery data yet</p>
+            <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Subject bars appear after a scored exam.</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

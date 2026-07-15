@@ -26,6 +26,9 @@ export default function App() {
           <Route index element={<DashboardPage />} />
         </Route>
         <Route path="/exam" element={<ExamPage />} />
+        <Route path="/exam-log" element={<DashboardLayout />}>
+          <Route index element={<ExamPage historyOnly />} />
+        </Route>
         <Route path="/reviewers" element={<DashboardLayout />}>
           <Route index element={<ReviewersPage />} />
         </Route>

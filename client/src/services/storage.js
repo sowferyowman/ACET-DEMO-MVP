@@ -12,6 +12,7 @@ const LEGACY_FORUM_KEY = "acet_forum_threads";
 const FORUM_KEY = "forumPosts";
 const NOTIFICATIONS_KEY = "notificationsData";
 const REVIEWER_PROGRESS_KEY = "reviewer_progress";
+const STAN_DASHBOARD_RESET_KEY = "acet_stan_dashboard_reset_20260715_v1";
 
 const defaultUsers = [
   {
@@ -366,6 +367,26 @@ export function initializeLocalStorage() {
     localStorage.removeItem(CURRENT_ACTIVE_USER_KEY);
     localStorage.removeItem(SESSION_KEY);
   }
+
+  if (!localStorage.getItem(STAN_DASHBOARD_RESET_KEY)) {
+    const dashboardStore = readJson(DASHBOARD_KEY, {});
+    const stanEmails = new Set(
+      accounts
+        .filter((account) => /stan/i.test(`${account.name || ""} ${account.nickname || ""} ${account.username || ""}`))
+        .map((account) => account.email)
+        .filter(Boolean)
+    );
+    defaultUserAccounts
+      .filter((account) => /stan/i.test(`${account.name || ""} ${account.nickname || ""} ${account.username || ""}`))
+      .forEach((account) => stanEmails.add(account.email));
+
+    const nextDashboardStore = { ...dashboardStore };
+    stanEmails.forEach((email) => {
+      nextDashboardStore[email] = createEmptyDashboard(email);
+    });
+    writeJson(DASHBOARD_KEY, nextDashboardStore);
+    localStorage.setItem(STAN_DASHBOARD_RESET_KEY, "true");
+  }
 }
 
 export function getUsers() {
@@ -716,7 +737,14 @@ export function getDashboardStore() {
 
 export function getStudentDashboard(email) {
   const store = getDashboardStore();
-  return store[email] || createEmptyDashboard(email);
+  const dashboard = store[email] || createEmptyDashboard(email);
+  const normalizedDashboard = normalizeDashboardAnalytics(dashboard, email);
+
+  if (JSON.stringify(dashboard) !== JSON.stringify(normalizedDashboard)) {
+    writeJson(DASHBOARD_KEY, { ...store, [email]: normalizedDashboard });
+  }
+
+  return normalizedDashboard;
 }
 
 export function saveStudentDashboard(email, dashboard) {
@@ -740,6 +768,109 @@ export function createEmptyDashboard(email) {
     rewards: [],
     aiInsight: null
   };
+}
+
+function normalizeDashboardAnalytics(dashboard, email) {
+  const exams = Array.isArray(dashboard.exams) ? dashboard.exams : [];
+  const attempts = Array.isArray(dashboard.attempts) ? dashboard.attempts : [];
+  const attemptsForChart = attempts.length
+    ? attempts
+    : exams.map((exam, index) => ({
+        id: `legacy_attempt_${index + 1}`,
+        examTitle: exam.name,
+        takenAt: exam.takenAt,
+        finalPct: exam.score,
+        subjectScores: []
+      }));
+
+  const chronologicalAttempts = [...attemptsForChart].reverse();
+  const latestAttempt = attemptsForChart[0];
+  const progression = chronologicalAttempts.map((attempt, index) => ({
+    label: attempt.examTitle || attempt.name || `Mock ${index + 1}`,
+    score: Number(attempt.finalPct ?? attempt.score ?? 0),
+    takenAt: attempt.takenAt || "",
+    examTitle: attempt.examTitle || attempt.name || `Mock ${index + 1}`
+  }));
+
+  const latestSubjectScores = Array.isArray(latestAttempt?.subjectScores) ? latestAttempt.subjectScores : [];
+  const subjects = latestSubjectScores.length
+    ? latestSubjectScores.map((subject) => ({
+        name: subject.title || subject.name,
+        mastery: Number(subject.pct ?? subject.mastery ?? 0),
+        color: Number(subject.pct ?? subject.mastery ?? 0) >= 90 ? "emerald" : Number(subject.pct ?? subject.mastery ?? 0) >= 80 ? "blue" : Number(subject.pct ?? subject.mastery ?? 0) >= 70 ? "amber" : "rose"
+      }))
+    : dashboard.subjects || [];
+  const totalTests = attemptsForChart.length || exams.length;
+  const studyPoints = calculateRawDashboardPoints({ ...dashboard, attempts });
+  const placement = getRawLeaderboardPlacement(email, { ...dashboard, attempts });
+
+  return {
+    ...dashboard,
+    student: dashboard.student || { email, displayName: "Stanley Mejia" },
+    hasDashboardData: exams.length > 0 || attemptsForChart.length > 0 || Boolean(dashboard.hasDashboardData),
+    stats: [
+      {
+        label: "Latest Mock Score",
+        value: latestAttempt ? `${Number(latestAttempt.finalPct ?? latestAttempt.score ?? 0)}%` : "0%",
+        detail: latestAttempt ? `Scored from ${latestAttempt.examTitle || latestAttempt.name || "completed mock exam"}` : "No completed exam attempts yet",
+        accent: "blue"
+      },
+      {
+        label: "Total Tests Taken",
+        value: String(totalTests),
+        detail: `${totalTests} completed mock exam${totalTests === 1 ? "" : "s"}`,
+        accent: "purple"
+      },
+      {
+        label: "Leaderboard Placement",
+        value: placement.rank ? `#${placement.rank}` : "-",
+        detail: placement.total ? `Out of ${placement.total} students` : "No ranked students yet",
+        accent: "indigo"
+      },
+      {
+        label: "Study Points",
+        value: studyPoints.toLocaleString(),
+        detail: "From exams, reviewers, and badges",
+        accent: "teal"
+      }
+    ],
+    progression,
+    subjects,
+    exams,
+    attempts
+  };
+}
+
+function calculateRawDashboardPoints(dashboard) {
+  const attempts = Array.isArray(dashboard?.attempts) ? dashboard.attempts : [];
+  const rewards = Array.isArray(dashboard?.rewards) ? dashboard.rewards : [];
+  const mockPoints = attempts.reduce(
+    (sum, attempt) => sum + Number(attempt.earnedMockPoints || calculateAttemptPoints(attempt.finalPct, attempt.durationSeconds)),
+    0
+  );
+  const rewardPoints = rewards.reduce((sum, reward) => sum + Number(reward.points || 0), 0);
+  return mockPoints + rewardPoints;
+}
+
+function getRawLeaderboardPlacement(email, currentDashboard) {
+  const dashboardStore = readJson(DASHBOARD_KEY, {});
+  const students = mergeUserAccounts(
+    defaultUserAccounts,
+    readJson(USER_ACCOUNTS_KEY, defaultUserAccounts)
+  ).filter((account) => account.role === "student");
+
+  const rows = students
+    .map((student) => {
+      const dashboard = student.email === email ? currentDashboard : dashboardStore[student.email] || createEmptyDashboard(student.email);
+      return {
+        email: student.email,
+        points: calculateRawDashboardPoints(dashboard)
+      };
+    })
+    .sort((a, b) => b.points - a.points || a.email.localeCompare(b.email));
+
+  const rank = rows.findIndex((row) => row.email === email) + 1;
+  return { rank, total: rows.length };
 }
 
 export function saveExamAttemptForStudent(user, blueprint, responses, results, meta = {}) {
@@ -769,7 +900,12 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
     ...(currentDashboard.attempts || [])
   ];
 
-  const progression = [...currentDashboard.progression, { label: `Mock ${attemptNumber}`, score: results.finalPct }];
+  const progression = [...attempts].reverse().map((attempt, index) => ({
+    label: attempt.examTitle || `Mock ${index + 1}`,
+    score: Number(attempt.finalPct || 0),
+    takenAt: attempt.takenAt,
+    examTitle: attempt.examTitle || `Mock ${index + 1}`
+  }));
   const subjects = results.subjectScores.map((subject) => ({
     name: subject.title,
     mastery: subject.pct,
@@ -792,7 +928,9 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
     hasDashboardData: true,
     stats: [
       { label: "Latest Mock Score", value: `${results.finalPct}%`, detail: `Scored from ${blueprint.title}`, accent: "blue" },
-      { label: "Total Tests Taken", value: String(exams.length), detail: `${exams.length} completed mock exam${exams.length === 1 ? "" : "s"}`, accent: "purple" }
+      { label: "Total Tests Taken", value: String(exams.length), detail: `${exams.length} completed mock exam${exams.length === 1 ? "" : "s"}`, accent: "purple" },
+      { label: "Leaderboard Placement", value: "-", detail: "Refresh dashboard for updated rank", accent: "indigo" },
+      { label: "Study Points", value: String(earnedMockPoints), detail: "From exams, reviewers, and badges", accent: "teal" }
     ],
     progression,
     subjects,
