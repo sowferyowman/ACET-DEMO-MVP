@@ -8,7 +8,8 @@
     "client:build": "npm --prefix client run build",
     "server:dev": "nodemon server/src/index.js",
     "server:start": "node server/src/index.js",
-    "install:all": "npm install && npm --prefix client install"
+    "install:all": "npm install && npm --prefix client install",
+    "knip": "knip"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -17,7 +18,10 @@
     "groq-sdk": "^0.32.0"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "concurrently": "^9.1.2",
-    "nodemon": "^3.1.9"
+    "knip": "^6.27.0",
+    "nodemon": "^3.1.9",
+    "typescript": "^7.0.2"
   }
 }
