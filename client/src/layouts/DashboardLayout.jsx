@@ -288,8 +288,17 @@ export default function DashboardLayout() {
 
         /* Collapsed sidebar button adjustment */
         .continue-application-collapsed {
-          padding: 17px 29px 17px 29px !important;
-          text-align: center !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          color: rgba(255, 255, 255, 0.4) !important;
+          transition: all 0.2s !important;
+        }
+
+        .continue-application-collapsed:hover {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #ffffff !important;
+          border-radius: 0.75rem !important;
         }
 
         .continue-application-collapsed > div {
@@ -300,9 +309,52 @@ export default function DashboardLayout() {
         .continue-application-collapsed:after {
           display: none !important;
         }
+
+        /* Malupit na Logo Transition Effects (Inspired by Uiverse structure) */
+        .logo-container-collapsed {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: default;
+        }
+
+        .logo-hat-collapsed {
+          position: absolute;
+          opacity: 1;
+          transition: all 300ms ease-in-out;
+          color: #60a5fa; /* Original text-blue-400 */
+        }
+
+        .logo-text-collapsed {
+          position: absolute;
+          opacity: 0;
+          transform: scale(0.8);
+          transition: all 300ms ease-in-out;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          line-height: 1.1;
+          text-align: center;
+          color: #38bdf8; /* Cyan-400 accent color para sa text */
+          width: 100%;
+        }
+
+        /* Trigger swap on hover kapag naka-collapse */
+        .logo-container-collapsed:hover .logo-hat-collapsed {
+          opacity: 0;
+          transform: scale(0.6) rotate(-15deg);
+        }
+
+        .logo-container-collapsed:hover .logo-text-collapsed {
+          opacity: 1;
+          transform: scale(1);
+        }
       `}</style>
 
-      {/* Restored default background classes so standard pages/hovers render correctly */}
       <div className="flex h-screen overflow-hidden bg-slate-50">
         
         {/* DESKTOP SIDEBAR */}
@@ -310,17 +362,29 @@ export default function DashboardLayout() {
           
           {/* Logo / Header & Toggle Block */}
           <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-4 p-4" : "items-center justify-between p-6"}`}>
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-white shadow-lg backdrop-blur-sm">
-                <FaGraduationCap className="h-6 w-6" />
+            
+            {/* COLLAPSED BRAND LOGO HOVER EFFECT LAYER */}
+            {sidebarCollapsed ? (
+              <div className="logo-container-collapsed select-none">
+                <div className="logo-hat-collapsed">
+                  <FaGraduationCap className="h-7 w-7" />
+                </div>
+                <div className="logo-text-collapsed">
+                  ACET<br/>PREP
+                </div>
               </div>
-              {!sidebarCollapsed && (
+            ) : (
+              /* STATIC EXPANDED LOGO VIEW */
+              <div className="flex items-center gap-3 select-none pointer-events-none">
+                <div className="p-1 text-blue-400">
+                  <FaGraduationCap className="h-7 w-7" />
+                </div>
                 <div className="min-w-0">
                   <h1 className="text-xl font-black tracking-tight text-white leading-none">ACET</h1>
                   <p className="text-[9px] font-black tracking-[0.25em] text-blue-400 mt-1">STUDENT PREP</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Collapse/Expand Toggle Button */}
             <button
@@ -334,26 +398,36 @@ export default function DashboardLayout() {
             </button>
           </div>
 
-          {/* Quick Start Main Button - Uiverse.io Style */}
+          {/* Quick Start Main Button */}
           <div className={`pb-5 ${sidebarCollapsed ? "px-3" : "px-4"}`}>
             <button
               onClick={() => navigate("/exam")}
-              className={`continue-application ${sidebarCollapsed ? "continue-application-collapsed" : ""}`}
+              className={`continue-application ${
+                sidebarCollapsed 
+                  ? "continue-application-collapsed flex items-center justify-center h-11 w-11 mx-auto" 
+                  : ""
+              }`}
               aria-label="Start ACET mock exam"
               title={sidebarCollapsed ? "Start ACET mock exam" : undefined}
             >
-              <div>
-                <div className="folder">
-                  <div className="top">
-                    <svg viewBox="0 0 24 27">
-                      <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8 L0,8 L0,1 C0,0.44771525 0.44771525,1.01453063e-16 1,0 Z" />
-                    </svg>
+              {!sidebarCollapsed && (
+                <>
+                  <div>
+                    <div className="folder">
+                      <div className="top">
+                        <svg viewBox="0 0 24 27">
+                          <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8 L0,8 L0,1 C0,0.44771525 0.44771525,1.01453063e-16 1,0 Z" />
+                        </svg>
+                      </div>
+                      <div className="paper"></div>
+                    </div>
+                    <div className="pencil"></div>
                   </div>
-                  <div className="paper"></div>
-                </div>
-                <div className="pencil"></div>
-              </div>
-              {!sidebarCollapsed && <span>Start Exam</span>}
+                  <span>Start Exam</span>
+                </>
+              )}
+
+              {sidebarCollapsed && <FaClipboardList className="shrink-0 text-base" />}
             </button>
           </div>
 
@@ -368,7 +442,7 @@ export default function DashboardLayout() {
                   title={sidebarCollapsed ? item.label : undefined}
                   className={({ isActive }) =>
                     `flex items-center rounded-xl py-3 text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/25 ${
-                      sidebarCollapsed ? "justify-center px-0" : "gap-3 px-4"
+                      sidebarCollapsed ? "justify-center px-0 h-11 w-11 mx-auto" : "gap-3 px-4"
                     } ${
                       isActive 
                         ? "bg-white/10 text-white border border-white/10 shadow-inner" 
@@ -415,8 +489,8 @@ export default function DashboardLayout() {
             <aside id="student-mobile-navigation" className="sidebar-gradient relative flex h-full w-[min(20rem,88vw)] flex-col text-white shadow-2xl" aria-label="Student navigation">
               
               <div className="flex items-center justify-between border-b border-white/5 p-5">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-white/10 border border-white/10 p-2 text-white"><FaGraduationCap className="h-6 w-6" /></div>
+                <div className="flex items-center gap-3 select-none pointer-events-none">
+                  <div className="text-blue-400"><FaGraduationCap className="h-7 w-7" /></div>
                   <div>
                     <p className="text-lg font-black tracking-tight leading-none">ACET</p>
                     <p className="text-[9px] font-black tracking-[0.25em] text-blue-400 mt-1">STUDENT PREP</p>
@@ -488,8 +562,6 @@ export default function DashboardLayout() {
 
         {/* MAIN BODY LAYOUT */}
         <main className="flex-1 overflow-y-auto bg-transparent">
-          
-          {/* TOP BAR / NAVIGATION HEADER - NUKED sticky positioning and backdrop blur entirely */}
           <header className="border-b border-slate-200/50 bg-transparent px-5 py-4 md:px-8">
             <div className="flex items-center justify-between">
               <button 
@@ -506,7 +578,6 @@ export default function DashboardLayout() {
             </div>
           </header>
 
-          {/* DYNAMIC CHILD PAGE CONTENT CONTAINER - No top padding constraint */}
           <div className="p-5 md:p-8 max-w-7xl mx-auto w-full">
             <Outlet />
           </div>

@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const aiRoutes = require("./routes/aiRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const examRoutes = require("./routes/examRoutes");
 const { resolveStudent } = require("./middleware/auth");
@@ -15,6 +16,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/dashboard", resolveStudent, dashboardRoutes);
 app.use("/api/exams", resolveStudent, examRoutes);
+app.use("/api/ai", resolveStudent, aiRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.path}` });

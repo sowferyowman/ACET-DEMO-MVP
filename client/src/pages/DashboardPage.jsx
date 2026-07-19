@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaArrowRight, FaChartLine, FaExclamationTriangle } from "react-icons/fa";
 import { useDashboardData } from "../hooks/useDashboardData";
 import DashboardOverview from "../features/dashboard/DashboardOverview";
@@ -14,6 +14,19 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState(() => getNotificationsForUser(user?.id));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+
+  useEffect(() => {
+    function refreshNotifications() {
+      setNotifications(getNotificationsForUser(user?.id));
+    }
+
+    window.addEventListener("notificationsUpdated", refreshNotifications);
+    window.addEventListener("storage", refreshNotifications);
+    return () => {
+      window.removeEventListener("notificationsUpdated", refreshNotifications);
+      window.removeEventListener("storage", refreshNotifications);
+    };
+  }, [user?.id]);
 
   function toggleNotifications() {
     setNotificationsOpen((open) => {
@@ -89,81 +102,6 @@ export default function DashboardPage() {
   return (
     <>
       <style>{`
-        /* Ateneo Blue Studio Spotlight Backdrop - Dashboard Version */
-        .dashboard-spotlight {
-          background: radial-gradient(
-            ellipse at 50% 0%,
-            #003b88 0%,
-            #001c44 40%,
-            #00122c 70%,
-            #000c1d 100%
-          ) !important;
-          min-height: 100vh;
-          padding: 0;
-          margin: -20px !important; /* Forces background to fill outer layout margins fully */
-          position: relative;
-          overflow: hidden;
-          border-radius: 24px;
-        }
-
-        .dashboard-spotlight::before {
-          content: '';
-          position: absolute;
-          top: -200px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 800px;
-          height: 400px;
-          background: radial-gradient(
-            ellipse at center,
-            rgba(59, 130, 246, 0.2) 0%,
-            rgba(59, 130, 246, 0.05) 40%,
-            transparent 70%
-          );
-          pointer-events: none;
-          animation: pulseSpotlight 4s ease-in-out infinite;
-        }
-
-        @keyframes pulseSpotlight {
-          0%, 100% {
-            opacity: 0.6;
-            transform: translateX(-50%) scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: translateX(-50%) scale(1.1);
-          }
-        }
-
-        .page-shell {
-          padding: 24px 32px 40px !important;
-          max-width: 1400px !important;
-          margin: 0 auto !important;
-          width: 100% !important;
-          position: relative;
-          z-index: 10;
-        }
-
-        /* Explicitly styling Subject Mastery card to be dark themed */
-        .page-shell div[class*="bg-white"] {
-          background-color: rgba(255, 255, 255, 0.03) !important;
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
-          color: #f8fafc !important; /* slate-50 */
-          backdrop-filter: blur(12px) !important;
-        }
-
-        .page-shell div[class*="bg-white"] h3,
-        .page-shell div[class*="bg-white"] h2,
-        .page-shell div[class*="bg-white"] p,
-        .page-shell div[class*="bg-white"] span {
-          color: #f8fafc !important;
-        }
-
-        /* Progress track backgrounds in Subject Mastery card */
-        .page-shell div[class*="bg-slate-100"] {
-          background-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
         .notification-dropdown {
           position: absolute;
           right: 0;
@@ -173,24 +111,22 @@ export default function DashboardPage() {
           overflow-y: auto;
           background: white;
           border-radius: 12px;
-          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 12px 48px rgba(15, 23, 42, 0.16);
+          border: 1px solid rgba(226, 232, 240, 0.9);
           z-index: 50;
         }
       `}</style>
 
-      <div className="dashboard-spotlight">
-        <div className="page-shell">
-          <DashboardOverview 
-            data={data} 
-            notifications={notifications}
-            notificationsOpen={notificationsOpen}
-            unreadCount={unreadCount}
-            toggleNotifications={toggleNotifications}
-            openNotification={openNotification}
-            formatNotificationTime={formatNotificationTime}
-          />
-        </div>
+      <div className="page-shell">
+        <DashboardOverview 
+          data={data} 
+          notifications={notifications}
+          notificationsOpen={notificationsOpen}
+          unreadCount={unreadCount}
+          toggleNotifications={toggleNotifications}
+          openNotification={openNotification}
+          formatNotificationTime={formatNotificationTime}
+        />
       </div>
     </>
   );

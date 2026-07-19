@@ -62,32 +62,7 @@ const defaultUserAccounts = [
   }
 ];
 
-const defaultForumThreads = [
-  {
-    id: "thread-gk-default",
-    title: "Tips for General Knowledge questions?",
-    body: "I keep missing the questions about Philippine presidents...",
-    tag: "English / GK",
-    author: "User#8821",
-    authorEmail: "demo-peer@exams.ph",
-    authorId: "demo-peer",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    reactions: {
-      like: { count: 2, userIds: [] },
-      insightful: { count: 1, userIds: [] },
-      fire: { count: 0, userIds: [] }
-    },
-    replies: [
-      {
-        id: "reply-gk-default",
-        author: "User#4410",
-        authorId: "demo-replier",
-        body: "Make a timeline and group presidents by major laws and historical periods.",
-        createdAt: new Date(Date.now() - 70 * 60 * 1000).toISOString()
-      }
-    ]
-  }
-];
+const defaultForumThreads = [];
 
 const studyPlanData = [
   {
@@ -349,7 +324,8 @@ export function initializeLocalStorage() {
   if (!localStorage.getItem(DRILL_BANK_KEY)) writeJson(DRILL_BANK_KEY, []);
   if (!localStorage.getItem(DASHBOARD_KEY)) writeJson(DASHBOARD_KEY, {});
   if (!localStorage.getItem(REVIEWER_PROGRESS_KEY)) writeJson(REVIEWER_PROGRESS_KEY, {});
-  if (!localStorage.getItem(FORUM_KEY)) writeJson(FORUM_KEY, readJson(LEGACY_FORUM_KEY, defaultForumThreads).map(normalizeForumThread));
+  if (!localStorage.getItem(FORUM_KEY)) writeJson(FORUM_KEY, []);
+  removeSeededForumUsers();
   if (!localStorage.getItem(NOTIFICATIONS_KEY)) writeJson(NOTIFICATIONS_KEY, []);
 
   if (!localStorage.getItem(USER_ACCOUNTS_KEY)) {
@@ -693,6 +669,11 @@ export function publishReviewerBlueprint(reviewer) {
   };
 
   writeJson(REVIEWERS_KEY, [...reviewers, nextReviewer]);
+  createPublishedContentNotifications({
+    type: "new_reviewer",
+    message: `New Reviewer Posted: ${nextReviewer.title || "Untitled Reviewer"}`,
+    metadata: { reviewerId: nextReviewer.id }
+  });
   return nextReviewer;
 }
 
@@ -727,6 +708,11 @@ export function publishDrillQuestion(question) {
   };
 
   writeJson(DRILL_BANK_KEY, [nextQuestion, ...drillBank]);
+  createPublishedContentNotifications({
+    type: "new_drill",
+    message: `New Drill Posted: ${category}${subCategory ? ` - ${subCategory}` : ""}`,
+    metadata: { drillId: nextQuestion.id, category, subCategory, weaknessTag }
+  });
   return nextQuestion;
 }
 
@@ -801,7 +787,8 @@ function normalizeDashboardAnalytics(dashboard, email) {
       }))
     : dashboard.subjects || [];
   const totalTests = attemptsForChart.length || exams.length;
-  const studyPoints = calculateRawDashboardPoints({ ...dashboard, attempts });
+  const rewardSummary = buildCommunityRewardSummary(email, { ...dashboard, attempts });
+  const studyPoints = rewardSummary.totalPoints;
   const placement = getRawLeaderboardPlacement(email, { ...dashboard, attempts });
 
   return {
@@ -841,17 +828,6 @@ function normalizeDashboardAnalytics(dashboard, email) {
   };
 }
 
-function calculateRawDashboardPoints(dashboard) {
-  const attempts = Array.isArray(dashboard?.attempts) ? dashboard.attempts : [];
-  const rewards = Array.isArray(dashboard?.rewards) ? dashboard.rewards : [];
-  const mockPoints = attempts.reduce(
-    (sum, attempt) => sum + Number(attempt.earnedMockPoints || calculateAttemptPoints(attempt.finalPct, attempt.durationSeconds)),
-    0
-  );
-  const rewardPoints = rewards.reduce((sum, reward) => sum + Number(reward.points || 0), 0);
-  return mockPoints + rewardPoints;
-}
-
 function getRawLeaderboardPlacement(email, currentDashboard) {
   const dashboardStore = readJson(DASHBOARD_KEY, {});
   const students = mergeUserAccounts(
@@ -864,7 +840,7 @@ function getRawLeaderboardPlacement(email, currentDashboard) {
       const dashboard = student.email === email ? currentDashboard : dashboardStore[student.email] || createEmptyDashboard(student.email);
       return {
         email: student.email,
-        points: calculateRawDashboardPoints(dashboard)
+        points: buildCommunityRewardSummary(student.email, dashboard).totalPoints
       };
     })
     .sort((a, b) => b.points - a.points || a.email.localeCompare(b.email));
@@ -922,6 +898,8 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
       status: index === 0 ? "today" : item.status
     };
   });
+  const rewardSummary = buildCommunityRewardSummary(user.email, { ...currentDashboard, attempts });
+  const placement = getRawLeaderboardPlacement(user.email, { ...currentDashboard, attempts });
 
   const nextDashboard = {
     ...currentDashboard,
@@ -929,8 +907,8 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
     stats: [
       { label: "Latest Mock Score", value: `${results.finalPct}%`, detail: `Scored from ${blueprint.title}`, accent: "blue" },
       { label: "Total Tests Taken", value: String(exams.length), detail: `${exams.length} completed mock exam${exams.length === 1 ? "" : "s"}`, accent: "purple" },
-      { label: "Leaderboard Placement", value: "-", detail: "Refresh dashboard for updated rank", accent: "indigo" },
-      { label: "Study Points", value: String(earnedMockPoints), detail: "From exams, reviewers, and badges", accent: "teal" }
+      { label: "Leaderboard Placement", value: placement.rank ? `#${placement.rank}` : "-", detail: placement.total ? `Out of ${placement.total} students` : "No ranked students yet", accent: "indigo" },
+      { label: "Study Points", value: rewardSummary.totalPoints.toLocaleString(), detail: "From exams, reviewers, and badges", accent: "teal" }
     ],
     progression,
     subjects,
@@ -945,6 +923,37 @@ export function saveExamAttemptForStudent(user, blueprint, responses, results, m
 
   saveStudentDashboard(user.email, nextDashboard);
   return nextDashboard;
+}
+
+export function saveAiDiagnosticForLatestAttempt(email, diagnostic) {
+  const dashboard = getStudentDashboard(email);
+  const attempts = Array.isArray(dashboard.attempts) ? dashboard.attempts : [];
+  if (!attempts.length) return dashboard;
+
+  const nextAttempts = attempts.map((attempt, index) => (
+    index === 0
+      ? {
+          ...attempt,
+          aiDiagnostic: diagnostic,
+          aiDiagnosticGeneratedAt: new Date().toISOString()
+        }
+      : attempt
+  ));
+
+  const nextDashboard = {
+    ...dashboard,
+    attempts: nextAttempts,
+    aiInsight: diagnostic?.weakness_paragraph
+      ? {
+          title: "AI Deep Dive: Adaptive Diagnostic",
+          priority: diagnostic.percentage_score < 75 ? "Priority Intervention Required" : "Maintenance Mode",
+          detail: diagnostic.weakness_paragraph
+        }
+      : dashboard.aiInsight
+  };
+
+  saveStudentDashboard(email, nextDashboard);
+  return getStudentDashboard(email);
 }
 
 export function scoreBlueprintAttempt(blueprint, responses, meta = {}) {
@@ -1077,6 +1086,10 @@ export function setReviewerModuleCompletion(email, reviewerId, moduleId, complet
 
 export function getCommunityRewardSummary(email) {
   const dashboard = getStudentDashboard(email);
+  return buildCommunityRewardSummary(email, dashboard);
+}
+
+function buildCommunityRewardSummary(email, dashboard) {
   const exams = getExamBlueprints();
   const reviewers = getReviewerBlueprints();
   const progress = getReviewerProgress(email);
@@ -1170,13 +1183,17 @@ export function addForumReply(user, threadId, body) {
 
 export function toggleForumReaction(threadId, reactionType, userId) {
   const threads = getForumThreads();
+  let targetThread = null;
+  let activeAfterToggle = false;
   const updated = threads.map((thread) => {
     if (thread.id !== threadId) return thread;
+    targetThread = thread;
     const reactions = normalizeReactions(thread.reactions);
     const reaction = reactions[reactionType] || { count: 0, userIds: [] };
     const userIds = reaction.userIds || [];
     const active = userIds.includes(userId);
     const nextUserIds = active ? userIds.filter((id) => id !== userId) : [...userIds, userId];
+    activeAfterToggle = !active;
     return {
       ...thread,
       reactions: {
@@ -1189,6 +1206,14 @@ export function toggleForumReaction(threadId, reactionType, userId) {
     };
   });
   writeJson(FORUM_KEY, updated);
+  if (activeAfterToggle && targetThread?.authorId && targetThread.authorId !== userId) {
+    createNotification({
+      userId: targetThread.authorId,
+      type: "post_reaction",
+      message: `Someone reacted to your post: ${targetThread.title}`,
+      metadata: { threadId, reactionType }
+    });
+  }
   window.dispatchEvent(new CustomEvent("forumPostsUpdated"));
   return updated.find((thread) => thread.id === threadId);
 }
@@ -1213,15 +1238,37 @@ export function markNotificationsRead(userId, notificationId = null) {
 }
 
 function createExamPublishedNotifications(exam) {
+  createPublishedContentNotifications({
+    type: "new_exam",
+    message: `New Exam Posted: ${exam.title || "Untitled Mock Exam"}`,
+    metadata: { examId: exam.id }
+  });
+}
+
+function createPublishedContentNotifications({ type, message, metadata = {} }) {
   const students = getUserAccounts().filter((account) => account.role === "student");
   students.forEach((student) => {
     createNotification({
       userId: student.id,
-      type: "new_exam",
-      message: `New Exam Posted: ${exam.title || "Untitled Mock Exam"}`,
-      metadata: { examId: exam.id }
+      type,
+      message,
+      metadata
     });
   });
+}
+
+function removeSeededForumUsers() {
+  const threads = readJson(FORUM_KEY, []);
+  const filtered = threads
+    .map((thread) => ({
+      ...thread,
+      replies: (thread.replies || []).filter((reply) => !["User#4410", "User#8821"].includes(reply.author))
+    }))
+    .filter((thread) => !["User#4410", "User#8821"].includes(thread.author));
+
+  if (filtered.length !== threads.length || JSON.stringify(filtered) !== JSON.stringify(threads)) {
+    writeJson(FORUM_KEY, filtered);
+  }
 }
 
 function createNotification({ userId, type, message, metadata = {} }) {

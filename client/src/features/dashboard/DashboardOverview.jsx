@@ -17,8 +17,8 @@ export default function DashboardOverview({
     <section id="dashboard" className="space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white">ACET Performance Overview</h2>
-          <p className="mt-1 text-sm text-white/60">Metrics based on {examCount} completed mock examination{examCount === 1 ? "" : "s"}.</p>
+          <h2 className="text-2xl font-black text-slate-950">ACET Performance Overview</h2>
+          <p className="mt-1 text-sm text-slate-500">Metrics based on {examCount} completed mock examination{examCount === 1 ? "" : "s"}.</p>
         </div>
         
         {/* Notification Button - Aligned with the header */}
@@ -114,17 +114,17 @@ export default function DashboardOverview({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl shadow-black/10">
-            <h3 className="text-lg font-bold text-white">Exam Progression Trajectory</h3>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-slate-800">Exam Progression Trajectory</h3>
             {data.progression.length ? (
               <div className="mt-4 h-72">
                 <ProgressChart points={data.progression} />
               </div>
             ) : (
-              <div className="mt-4 grid h-72 place-items-center rounded-2xl border border-dashed border-white/10 bg-white/5 text-center">
+              <div className="mt-4 grid h-72 place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-center">
                 <div>
-                  <p className="text-sm font-black text-white/70">No exam trajectory yet</p>
-                  <p className="mt-1 text-xs font-semibold text-white/40">Complete a mock exam to generate score movement.</p>
+                  <p className="text-sm font-black text-slate-700">No exam trajectory yet</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Complete a mock exam to generate score movement.</p>
                 </div>
               </div>
             )}
