@@ -197,7 +197,8 @@ export default function WeaknessDrillsPage() {
         </header>
 
         <AdaptiveGatePanel gate={adaptiveGate} status={gateStatus} />
-        <DiagnosticReport analysis={analysis} />
+        {/* FIX: Ipinasa na ang adaptiveGate state para sumabay ang dynamic layout rendering */}
+        <DiagnosticReport analysis={analysis} adaptiveGate={adaptiveGate} />
 
         <div className="space-y-3">
           {rankedWeakSubjects.map((subject) => (
@@ -294,9 +295,16 @@ export default function WeaknessDrillsPage() {
   }
 }
 
-function DiagnosticReport({ analysis }) {
-  const diagnostic = analysis.primaryDiagnostic;
-  const narrative = buildDiagnosticNarrative(analysis);
+// FIX: Ginawang dynamic ang component para laging synchronized sa kasalukuyang AI target subject
+function DiagnosticReport({ analysis, adaptiveGate }) {
+  const aiFocusSubject = adaptiveGate?.focus_subject;
+
+  const diagnostic = useMemo(() => {
+    if (!aiFocusSubject || !analysis.diagnosticInsights) return analysis.primaryDiagnostic;
+    return analysis.diagnosticInsights.find(item => item.category === aiFocusSubject) || analysis.primaryDiagnostic;
+  }, [analysis.primaryDiagnostic, analysis.diagnosticInsights, aiFocusSubject]);
+
+  const narrative = buildDiagnosticNarrativeFromDiagnostic(analysis, diagnostic);
 
   return (
     <section className="mb-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
@@ -318,7 +326,6 @@ function DiagnosticReport({ analysis }) {
           {diagnostic.path?.map((label) => (
             <span key={label} className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-black text-slate-500">{label}</span>
           ))}
-
         </div>
       )}
     </section>
@@ -355,8 +362,7 @@ function AdaptiveGatePanel({ gate, status }) {
   );
 }
 
-function buildDiagnosticNarrative(analysis) {
-  const diagnostic = analysis.primaryDiagnostic;
+function buildDiagnosticNarrativeFromDiagnostic(analysis, diagnostic) {
   if (!analysis.hasAttempts || !diagnostic) {
     return analysis.hasAttempts
       ? "Complete another mock exam to add more per-question timing, answer-change, and diagnostic data to this report."

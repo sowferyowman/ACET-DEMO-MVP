@@ -62,7 +62,7 @@ export default function ResultsView({ results, onBack }) {
           <div className="border-b border-violet-100 bg-violet-50 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-violet-600">Groq Diagnostic Engine</p>
+                <p className="text-xs font-black uppercase tracking-wider text-violet-600">Diagnostic Engine</p>
                 <h2 className="mt-1 text-2xl font-black text-slate-950">Post-Exam Diagnostics</h2>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-black ${

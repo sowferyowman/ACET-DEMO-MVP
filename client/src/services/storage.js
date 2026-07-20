@@ -677,6 +677,76 @@ export function publishReviewerBlueprint(reviewer) {
   return nextReviewer;
 }
 
+// ============================================
+// NEW ADMIN FUNCTIONS FOR EXAM MANAGEMENT
+// ============================================
+
+// Get a single exam by ID for editing
+export function getExamBlueprintById(examId) {
+  const blueprints = getExamBlueprints();
+  return blueprints.find((exam) => exam.id === examId) || null;
+}
+
+// Delete an exam by ID
+export function deleteExamBlueprint(examId) {
+  const blueprints = getExamBlueprints();
+  const filtered = blueprints.filter((exam) => exam.id !== examId);
+  writeJson(EXAMS_KEY, filtered);
+  
+  createPublishedContentNotifications({
+    type: "exam_deleted",
+    message: `An exam has been removed from your available tests.`,
+    metadata: { examId }
+  });
+  
+  return filtered;
+}
+
+// Hide/Unhide an exam
+export function toggleExamVisibility(examId) {
+  const blueprints = getExamBlueprints();
+  const updated = blueprints.map((exam) => {
+    if (exam.id === examId) {
+      return { 
+        ...exam, 
+        isHidden: !exam.isHidden,
+        hiddenAt: exam.isHidden ? null : new Date().toISOString()
+      };
+    }
+    return exam;
+  });
+  writeJson(EXAMS_KEY, updated);
+  return updated.find((exam) => exam.id === examId);
+}
+
+// Update an existing exam
+export function updateExamBlueprint(examId, updates) {
+  const blueprints = getExamBlueprints();
+  const updated = blueprints.map((exam) => {
+    if (exam.id === examId) {
+      return {
+        ...exam,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }
+    return exam;
+  });
+  writeJson(EXAMS_KEY, updated);
+  
+  createPublishedContentNotifications({
+    type: "exam_updated",
+    message: `"${updates.title || 'An exam'}" has been updated.`,
+    metadata: { examId }
+  });
+  
+  return updated.find((exam) => exam.id === examId);
+}
+
+// ============================================
+// END OF NEW ADMIN FUNCTIONS
+// ============================================
+
 export function getDrillBankQuestions() {
   initializeLocalStorage();
   return readJson(DRILL_BANK_KEY, []);
